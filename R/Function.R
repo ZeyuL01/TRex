@@ -6,7 +6,7 @@
 #' @param bin_width width of bin, should be in 100/500/1000.
 #'
 #' @return a data frame has three columns, TR labels, number of 'good' windows, number of 'total' informative cases.
-alignment_wrapper <- function(input_vec, bin_width, option){
+alignment_wrapper <- function(input_vec, bin_width){
   meta_table <- readRDS(paste0(system.file(package = "vBIT"),"/meta_table.rds"))
 
   file_table <- meta_table[[paste0("meta_",bin_width)]]
@@ -116,9 +116,11 @@ import_input_regions<-function(file,format=NULL,bin_width = 1000){
       end <- rtracklayer::end(peak_dat[GenomicRanges::seqnames(peak_dat)==chr_lab])
       inds <- (end + start) %/% (2 * bin_width) + 1
     }else if(format=="narrowPeak" | format=="broadPeak"){
-      inds <- peak_dat[GenomicRanges::seqnames(peak_dat)==chr_lab]$peak %/% bin_width + 1
+      start <- rtracklayer::start(peak_dat[GenomicRanges::seqnames(peak_dat)==chr_lab])
+      inds <- (start+peak_dat[GenomicRanges::seqnames(peak_dat)==chr_lab]$peak)%/% bin_width + 1
     }else if(format=="bigNarrowPeak"){
-      inds <- peak_dat[GenomicRanges::seqnames(peak_dat)==chr_lab]$abs_summit %/% bin_width + 1
+      start <- rtracklayer::start(peak_dat[GenomicRanges::seqnames(peak_dat)==chr_lab])
+      inds <- (start+peak_dat[GenomicRanges::seqnames(peak_dat)==chr_lab]$abs_summit)%/% bin_width + 1
     }else if(format=="csv"){
       start <- peak_dat$Start[which(peak_dat$Chrom==chr_lab)]
       end <- peak_dat$End[which(peak_dat$Chrom==chr_lab)]
@@ -616,4 +618,389 @@ addTextLabels <- function(xCoords, yCoords, labels, cex.label=1, col.label="red"
 logistic <- function(x) {
   1 / (1 + exp(-x))
 }
+
+
+#' function used to filter converted peaks based on distal elements
+#' @param input_vec vectorized object
+#'
+#' @return index of peak index after the filtering
+#'
+filter_by_distal <- function(input_vec){
+  distal_index<-dELS_data
+
+  filtered_input_vec<-intersect(input_vec,distal_index)
+
+  return(filtered_input_vec)
+}
+
+
+#' Plot Gene Regulatory Network
+#'
+#' This function reads peak data and transcription regulator (TR) information
+#' to construct and visualize a gene regulatory network, integrating data
+#' from STRINGdb and TFLink databases.
+#'
+#' @param input_file_path Character string. Path to the peak file (e.g., BED format).
+#' @param input_table_path Character string. Path to the CSV file containing TRs,
+#'   expected to have a column named 'TR'.
+#' @param thres_TRs Integer. The number of top TRs to include from `input_table_path`. Default is 10.
+#' @param genome Character string. The reference genome, either "hg38" or "mm10".
+#' @param link Character string. Method to select target genes:
+#'   "pathway" - selects genes from the top enriched GO BP pathway.
+#'   "number" - selects genes based on peak frequency (top proportion).
+#'   Default is "number".
+#' @param tss_region Numeric vector of length 2. Region around TSS for peak annotation (e.g., c(-3000, 3000)). Default is c(-3000, 3000).
+#' @param number_proportion Numeric. Proportion of top genes to select when `link = "number"`. Default is 0.005 (top 0.5%).
+#' @param string_score_threshold Integer. Minimum interaction score for STRINGdb connections (0-1000). Default is 400.
+#' @param node_size Numeric. Base size for nodes in the plot. Default is 5.
+#' @param label_size Numeric. Size for node labels in the plot. Default is 3.
+#' @param layout_algorithm Character string. Layout algorithm for ggraph (e.g., 'fr', 'kk', 'nicely'). Default is 'fr' (Fruchterman-Reingold).
+#' @param vbit_package_name Character string. The name of the package where TFLink data resides, needed for `system.file`. Default is "vBIT".
+#'
+#' @return A ggraph plot object representing the gene regulatory network.
+#'
+#' @importFrom ChIPseeker readPeakFile annotatePeak
+#' @importFrom clusterProfiler enrichGO
+#' @importFrom biomaRt useMart getBM
+#' @importFrom STRINGdb STRINGdb
+#' @importFrom igraph graph_from_data_frame V E
+#' @importFrom ggraph ggraph geom_edge_link geom_node_point geom_node_text theme_graph create_layout
+#' @importFrom dplyr filter select rename left_join bind_rows distinct arrange desc %>% slice_head
+#' @importFrom readr read_csv cols
+#' @importFrom data.table fread
+#' @importFrom methods as
+#' @importFrom stats quantile
+#' @importFrom AnnotationDbi select
+#' @importFrom utils head installed.packages
+#'
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' # Example usage (requires valid input files and package installation)
+#' peak_file <- "path/to/your/peaks.bed"
+#' tr_file <- "path/to/your/tr_table.csv"
+#'
+#' # Create dummy files for demonstration if needed
+#' # writeLines(c("chr1\t1000\t1500", "chr1\t2000\t2500"), peak_file)
+#' # write.csv(data.frame(TR = c("TF1", "TF2", "TF3")), tr_file, row.names = FALSE)
+#'
+#' grn_plot <- plot_GRN(
+#'   input_file_path = peak_file,
+#'   input_table_path = tr_file,
+#'   thres_TRs = 3,
+#'   genome = "hg38", # or "mm10"
+#'   link = "number"
+#' )
+#'
+#' print(grn_plot)
+#' }
+plot_GRN <- function(input_file_path,
+                     input_table_path,
+                     thres_TRs = 10,
+                     genome = c("hg38", "mm10"),
+                     link = c("number", "pathway"), # Removed "score" as it wasn't implemented
+                     tss_region = c(-3000, 3000),
+                     number_proportion = 0.005,
+                     string_score_threshold = 400,
+                     node_size = 5,
+                     label_size = 3,
+                     layout_algorithm = 'nicely',
+                     vbit_package_name = "vBIT") {
+
+  # --- Input Validation and Argument Matching ---
+  genome <- match.arg(genome)
+  link <- match.arg(link)
+
+  if (!file.exists(input_file_path)) {
+    stop("Input peak file not found: ", input_file_path)
+  }
+  if (!file.exists(input_table_path)) {
+    stop("Input TR table file not found: ", input_table_path)
+  }
+  if (! (vbit_package_name %in% rownames(installed.packages())) ) {
+    warning("Package '", vbit_package_name, "' not found. Cannot load TFLink data from package path.")
+    # Consider adding alternative TFLink loading mechanism or stopping execution
+    # For now, we'll let it fail later if system.file returns empty string.
+  }
+
+
+  # --- Genome-Specific Setup ---
+  message("Setting up resources for genome: ", genome)
+  if (genome == "hg38") {
+    txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+    anno_db <- "org.Hs.eg.db"
+    species_id <- 9606
+    ensembl_dataset <- "hsapiens_gene_ensembl"
+    symbol_col <- "hgnc_symbol" # Column name for gene symbols in biomaRt result
+    tflink_ss_file <- paste0(system.file(package = vbit_package_name), "/data/TFLink_Human_SS_v1.0.csv")
+    tflink_ls_file <- paste0(system.file(package = vbit_package_name), "/data/TFLink_Human_LS_v1.0.csv")
+  } else if (genome == "mm10") {
+    txdb <- TxDb.Mmusculus.UCSC.mm10.knownGene # Corrected TxDb for mm10
+    anno_db <- "org.Mm.eg.db"
+    species_id <- 10090
+    ensembl_dataset <- "mmusculus_gene_ensembl"
+    symbol_col <- "mgi_symbol" # Column name for gene symbols in biomaRt result
+    tflink_ss_file <- paste0(system.file(package = vbit_package_name), "/data/TFLink_Mice_SS_v1.0.csv")
+    tflink_ls_file <- paste0(system.file(package = vbit_package_name), "/data/TFLink_Mice_LS_v1.0.csv")
+  } else {
+    # This case is redundant due to match.arg but kept for clarity
+    stop("Unsupported genome specified.")
+  }
+
+  # --- Load and Annotate Peaks ---
+  message("Loading and annotating peaks...")
+  peaks <- readPeakFile(input_file_path)
+  peak_anno <- annotatePeak(peaks,
+                            tssRegion = tss_region,
+                            TxDb = txdb,
+                            annoDb = anno_db)
+  peak_anno_df <- as.data.frame(peak_anno)
+
+  # --- Load TRs ---
+  message("Loading Transcription Regulators (TRs)...")
+  tr_table <- readr::read_csv(input_table_path, col_types = cols()) # More robust reading
+  if (!"TR" %in% colnames(tr_table)) {
+    stop("Input TR table must contain a column named 'TR'.")
+  }
+  # Ensure we don't select more TRs than available
+  n_trs_available <- nrow(tr_table)
+  if (thres_TRs > n_trs_available) {
+    warning("Requested ", thres_TRs, " TRs, but only ", n_trs_available, " are available in the table. Using all available TRs.")
+    thres_TRs <- n_trs_available
+  }
+  trs_selected <- tr_table$TR[1:thres_TRs]
+
+
+  # --- Get Protein Coding Genes List ---
+  message("Fetching protein-coding gene list from Ensembl...")
+  ensembl <- useMart("ensembl", dataset = ensembl_dataset)
+  protein_coding_genes <- getBM(
+    attributes = c('ensembl_gene_id', symbol_col, 'gene_biotype'),
+    filters = 'biotype',
+    values = 'protein_coding',
+    mart = ensembl
+  )
+  # Filter for genes that have a symbol
+  protein_coding_genes <- protein_coding_genes %>%
+    filter(!!sym(symbol_col) != "")
+
+  # --- Filter Annotated Peaks for Protein Coding Genes ---
+  # Ensure column names match ('SYMBOL' from ChIPseeker, symbol_col from biomaRt)
+  if (!"SYMBOL" %in% names(peak_anno_df)) {
+    stop("ChIPseeker annotation result does not contain 'SYMBOL' column.")
+  }
+  peak_anno_df_coding <- peak_anno_df %>%
+    filter(SYMBOL %in% protein_coding_genes[[symbol_col]]) # Use dynamic symbol column name
+
+  if (nrow(peak_anno_df_coding) == 0) {
+    stop("No peaks were annotated to protein-coding genes.")
+  }
+
+  # --- Select Target Genes based on 'link' method ---
+  message("Selecting target genes based on method: ", link)
+  genes_selected <- character(0) # Initialize empty vector
+
+  if (link == "pathway") {
+    # Identify genes near promoters
+    promoter_genes_entrez <- peak_anno_df_coding %>%
+      filter(grepl("Promoter", annotation)) %>% # annotation is standard ChIPseeker output column
+      pull(geneId) %>% # geneId is Entrez ID
+      unique()
+
+    if (length(promoter_genes_entrez) > 0) {
+      # Perform GO Enrichment Analysis
+      go_results <- enrichGO(gene = promoter_genes_entrez,
+                             OrgDb = anno_db,
+                             ont = "BP", # Biological Process
+                             pAdjustMethod = "BH",
+                             pvalueCutoff = 0.05,
+                             qvalueCutoff = 0.2, # Relaxed q-value often needed
+                             readable = TRUE)     # Converts Entrez IDs to Gene Symbols
+
+      if (!is.null(go_results) && nrow(go_results@result) > 0) {
+        # Get genes from the top significant pathway
+        top_pathway_genes <- strsplit(go_results@result$geneID[1], "/")[[1]]
+        genes_selected <- unique(top_pathway_genes)
+        message("Selected ", length(genes_selected), " genes from top GO pathway: ", go_results@result$Description[1])
+      } else {
+        warning("GO enrichment analysis yielded no significant results. No pathway genes selected.")
+      }
+    } else {
+      warning("No peaks found in promoter regions for GO analysis.")
+    }
+
+  } else if (link == "number") {
+    # Calculate frequency of genes associated with peaks
+    gene_freq <- table(peak_anno_df_coding$SYMBOL)
+
+    # Filter for valid protein-coding gene symbols
+    gene_freq <- gene_freq[names(gene_freq) %in% protein_coding_genes[[symbol_col]]]
+
+    if (length(gene_freq) > 0) {
+      # Determine cutoff based on quantile
+      cutoff <- quantile(gene_freq, probs = (1 - number_proportion), na.rm = TRUE)
+      # Select genes above or equal to the cutoff
+      genes_selected <- names(gene_freq[gene_freq >= cutoff])
+      message("Selected ", length(genes_selected), " genes based on peak frequency (top ", number_proportion * 100, "%)")
+    } else {
+      warning("No genes found after filtering for protein-coding symbols in frequency analysis.")
+    }
+  }
+
+  # Combine TRs and selected target genes for network nodes
+  all_selected_genes <- unique(c(trs_selected, genes_selected))
+
+  if (length(all_selected_genes) < 2) {
+    stop("Less than 2 genes/TRs selected. Cannot build a network.")
+  }
+
+  # --- Fetch Interactions from STRINGdb ---
+  message("Fetching interactions from STRINGdb (threshold: ", string_score_threshold, ")..")
+  string_db <- STRINGdb$new(version = "11.5", # Or latest version
+                            species = species_id,
+                            score_threshold = string_score_threshold,
+                            input_directory = "") # Optional: path to local STRING data
+
+  # Map gene symbols to STRING IDs
+  mapped_genes <- string_db$map(data.frame(gene = all_selected_genes), "gene", removeUnmappedRows = TRUE)
+
+  if (nrow(mapped_genes) > 0) {
+    # Get interactions between the mapped genes
+    interactions_string <- string_db$get_interactions(mapped_genes$STRING_id)
+
+    # Map STRING IDs back to gene symbols
+    interactions_string <- interactions_string %>%
+      left_join(select(mapped_genes, STRING_id, gene_from = gene), by = c("from" = "STRING_id")) %>%
+      left_join(select(mapped_genes, STRING_id, gene_to = gene), by = c("to" = "STRING_id")) %>%
+      filter(!is.na(gene_from) & !is.na(gene_to)) %>% # Ensure both partners are in our list
+      select(from = gene_from, to = gene_to, score = combined_score) %>%
+      mutate(source = "STRING") %>%
+      distinct() # Avoid duplicates if mapping wasn't 1:1
+  } else {
+    warning("None of the selected genes could be mapped by STRINGdb.")
+    interactions_string <- data.frame(from=character(), to=character(), score=numeric(), source=character())
+  }
+
+  # --- Fetch Interactions from TFLink ---
+  message("Fetching interactions from TFLink...")
+
+  # Helper function to safely read TFLink CSV
+  read_tflink <- function(file_path) {
+    if (!file.exists(file_path)) {
+      warning("TFLink file not found: ", file_path)
+      return(data.frame(Name.TF = character(), Name.Target = character())) # Return empty frame
+    }
+    tryCatch({
+      data.table::fread(file_path)
+    }, error = function(e) {
+      warning("Error reading TFLink file ", file_path, ": ", e$message)
+      return(data.frame(Name.TF = character(), Name.Target = character())) # Return empty frame on error
+    })
+  }
+
+  tflink_small <- read_tflink(tflink_ss_file)
+  tflink_large <- read_tflink(tflink_ls_file)
+
+  # Filter TFLink interactions for selected genes
+  interactions_tflink_small <- tflink_small %>%
+    filter(Name.TF %in% all_selected_genes & Name.Target %in% all_selected_genes) %>%
+    select(from = Name.TF, to = Name.Target) %>%
+    mutate(source = "TFLink_SS", score = NA) # Add source, score placeholder
+
+  interactions_tflink_large <- tflink_large %>%
+    filter(Name.TF %in% all_selected_genes & Name.Target %in% all_selected_genes) %>%
+    select(from = Name.TF, to = Name.Target) %>%
+    mutate(source = "TFLink_LS", score = NA) # Add source, score placeholder
+
+  # --- Combine Interactions ---
+  message("Combining interactions...")
+  all_interactions <- bind_rows(interactions_string, interactions_tflink_small, interactions_tflink_large) %>%
+    # Ensure interaction is only between nodes present in the final node list
+    filter(from %in% all_selected_genes & to %in% all_selected_genes) %>%
+    # Remove self-loops for clarity in visualization
+    filter(from != to) %>%
+    # Keep only one edge between two nodes regardless of direction for undirected graph
+    # Sort node pairs alphabetically to treat A-B and B-A as the same
+    rowwise() %>%
+    mutate(node1 = min(from, to), node2 = max(from, to)) %>%
+    ungroup() %>%
+    distinct(node1, node2, .keep_all = TRUE) %>% # Keep strongest score or first source if duplicates exist
+    select(from, to, source, score)
+
+
+  if (nrow(all_interactions) == 0) {
+    warning("No interactions found between the selected genes/TRs after combining sources.")
+    # Optionally, create a plot with disconnected nodes or stop
+  }
+
+  # --- Prepare Nodes Data Frame ---
+  nodes_df <- data.frame(
+    id = all_selected_genes,
+    type = ifelse(all_selected_genes %in% trs_selected, "TR", "Target Gene")
+  ) %>%
+    # Ensure nodes included are actually part of an interaction or are TRs
+    filter(id %in% unique(c(all_interactions$from, all_interactions$to)) | type == "TR")
+
+  # Refilter interactions to only include edges where both nodes are in the final nodes_df
+  final_nodes_ids <- nodes_df$id
+  edges_df <- all_interactions %>%
+    filter(from %in% final_nodes_ids & to %in% final_nodes_ids)
+
+  if (nrow(edges_df) == 0 && nrow(nodes_df) > 0) {
+    warning("No edges connect the final set of nodes. The plot will show disconnected nodes.")
+  } else if (nrow(nodes_df) == 0) {
+    stop("Cannot create graph: No nodes remaining after filtering.")
+  }
+
+  # --- Create igraph object ---
+  message("Building graph object...")
+  graph <- graph_from_data_frame(d = edges_df, vertices = nodes_df, directed = FALSE)
+
+  # --- Create Network Plot using ggraph ---
+  message("Generating network plot using ggraph with layout: ", layout_algorithm)
+
+  # Define colors
+  edge_colors <- c("STRING" = "red", "TFLink_SS" = "orange", "TFLink_LS" = "grey")
+  node_fill_colors <- c("TR" = "pink", "Target Gene" = "lightblue")
+  # Create layout *before* plotting - helps reproducibility and access to coordinates if needed
+  # Using create_layout is preferred over passing layout string directly to ggraph sometimes
+  set.seed(123) # Set seed for reproducible layout
+  graph_layout <- create_layout(graph, layout = "nicely")
+
+  # Build the plot
+  gg_plot <- ggraph(graph_layout) +
+    # Edges: Draw links first (UNDIRECTED)
+    geom_edge_link(aes(color = source),          # Map edge color to the source
+                   alpha = 0.7,
+                   # arrow = arrow(length = unit(1.5, 'mm')), # REMOVED this line
+                   end_cap = circle(1.5, 'mm'),     # Keep edges from overlapping node center
+                   show.legend = TRUE) +
+    scale_edge_color_manual(values = edge_colors, name = "Interaction Source") +
+
+    # Nodes: Use geom_node_label
+    geom_node_label(aes(label = name, fill = type),
+                    color = "black",
+                    size = label_size,
+                    label.padding = unit(0.2, "lines"),
+                    label.r = unit(0.15, "lines"),
+                    label.size = 0.1,
+                    show.legend = FALSE
+    ) +
+    scale_fill_manual(values = node_fill_colors, name = "Node Type") +
+
+    # Theme
+    theme_graph(base_family = 'sans') +
+    labs(
+      title = "Gene Regulatory Network",
+      subtitle = paste("Top", thres_TRs, "TRs and associated genes (Link:", link, ", Genome:", genome, ")")
+    ) +
+    theme(
+      legend.position = "right"
+    )
+
+  message("Plot generated successfully.")
+  return(gg_plot)
+}
+
 

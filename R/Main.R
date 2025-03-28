@@ -1,37 +1,33 @@
-
-
-
-vBIT <- function(file, output_path, show=TRUE, plot.bar=TRUE, format=NULL, N = 5000 ,bin_width = 1000, option="ALL"){
+vBIT <- function(file, output_path, show=TRUE, plot.bar=TRUE, format=NULL, N = 5000 ,bin_width = 1000){
   print("Load and map peaks to bins...")
 
   output_path = R.utils::getAbsolutePath(output_path)
 
-  filtered_peak_inds <- import_input_regions(file = file, format = format, bin_width = bin_width)
+  peak_inds <- import_input_regions(file = file, format = format, bin_width = bin_width)
+  filtered_peak_inds <- filter_by_distal(peak_inds)
 
   print("Done.")
   print(paste0("compare the input regions with the pre-compiled reference ChIP-seq data, bin width used: ",bin_width," bps"))
 
-  alignment_results <- alignment_wrapper(filtered_peak_inds, bin_width = bin_width, option = option)
+  alignment_results <- alignment_wrapper(filtered_peak_inds, bin_width = bin_width)
 
   print("Done.")
-
-  saveRDS(alignment_results, paste0(output_path,"/",tools::file_path_sans_ext(basename(file)),"_input.rds"))
 
   xct <- alignment_results$GOOD
   nct <- alignment_results$TOTAL
 
   tr_labels <- as.numeric(factor(alignment_results$TR))
 
-  print(paste0("Start BIT Gibbs sampler, iterations: ",N))
+  print(paste0("Start vBIT inference, iterations: ",N))
 
-  gibbs_sampler_results <- Main_Function(N, xct, nct, tr_labels)
+  VI_chain_results <- Main_Function(N, xct, nct, tr_labels)
 
-  gibbs_sampler_results[["TR_names"]] <- alignment_results$TR
+  VI_chain_results[["TR_names"]] <- alignment_results$TR
 
   print("Done.")
 
   file_name<-paste0(output_path,"/",tools::file_path_sans_ext(basename(file)),".rds")
-  saveRDS(gibbs_sampler_results,file_name)
+  saveRDS(VI_chain_results,file_name)
 
   print(paste0("Output data saved as ",file_name))
 
@@ -45,6 +41,17 @@ vBIT <- function(file, output_path, show=TRUE, plot.bar=TRUE, format=NULL, N = 5
 
   return()
 }
+
+
+
+
+
+
+
+
+
+
+
 
 
 
