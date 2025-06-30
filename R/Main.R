@@ -1,15 +1,15 @@
-vBIT <- function(file, output_path, show=TRUE, plot.bar=TRUE, format=NULL, N = 5000 ,bin_width = 1000){
+vBIT <- function(file, output_path, show=TRUE, plot.bar=TRUE, format=NULL, N = 5000 ,bin_width = 1000, genome=c("hg38","mm10")){
   print("Load and map peaks to bins...")
 
   output_path = R.utils::getAbsolutePath(output_path)
 
-  peak_inds <- import_input_regions(file = file, format = format, bin_width = bin_width)
-  filtered_peak_inds <- filter_by_distal(peak_inds)
+  peak_inds <- import_input_regions(file = file, format = format, bin_width = bin_width, genome = genome)
+  filtered_peak_inds <- filter_by_distal(peak_inds, genome=genome)
 
   print("Done.")
   print(paste0("compare the input regions with the pre-compiled reference ChIP-seq data, bin width used: ",bin_width," bps"))
 
-  alignment_results <- alignment_wrapper(filtered_peak_inds, bin_width = bin_width)
+  alignment_results <- alignment_wrapper(filtered_peak_inds, bin_width = bin_width, genome = genome)
 
   print("Done.")
 
@@ -41,9 +41,6 @@ vBIT <- function(file, output_path, show=TRUE, plot.bar=TRUE, format=NULL, N = 5
 
   return()
 }
-
-
-
 
 
 
