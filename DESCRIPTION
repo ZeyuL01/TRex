@@ -7,25 +7,17 @@ Author: Your Name
 Maintainer: Your Name <your@email.com>
 Description: One paragraph description of what the package does as one or more full sentences.
 License: GPL (>= 2)
-# CRAN Dependencies
 Imports:
     igraph,
     ggraph,
     ggplot2,
     dplyr,
-    readr,
-    magrittr,
-    biomaRt,
-    STRINGdb,
-    ChIPseeker,
-    clusterProfiler,
-    AnnotationDbi
-# Bioconductor / Optional / Data Dependencies
+    readr
 Suggests:
     TxDb.Hsapiens.UCSC.hg38.knownGene,
     org.Hs.eg.db,
     TxDb.Mmusculus.UCSC.mm10.knownGene,
     org.Mm.eg.db,
 LinkingTo: Rcpp, RcppArmadillo, RcppDist, RcppProgress
-RoxygenNote: 7.3.1
+RoxygenNote: 7.3.2
 LazyData: TRUE
