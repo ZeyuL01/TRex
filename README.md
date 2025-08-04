@@ -19,7 +19,7 @@
 
 **vBIT** is an enhanced version of the Bayesian Identification of Transcriptional Regulators (BIT) tool, designed to identify transcriptional regulators from user-provided epigenomic region sets with improved computational efficiency, better user experience, and enhanced error handling. This package leverages a pre-processed reference library containing over 10,000 human TR ChIP-seq datasets and over 5,000 mouse TR ChIP-seq datasets.
 
-![vBIT Overview](docs/images/Figure1.pdf)
+<img src="docs/images/Figure1.png" alt="vBIT Overview" width="300"/>
 
 ## Key Features
 
@@ -98,17 +98,6 @@ rank_plot(file_path = paste0(output_path, "peaks.rds"),
           n = 10)
 ```
 
-### Enhanced Region Import
-
-```r
-# Import regions with automatic format detection
-regions <- import_input_regions(
-  file = "peaks.bed",
-  format = NULL,  # Auto-detect from file extension
-  bin_width = 1000,
-  genome = "hg38"
-)
-```
 
 ## Function Reference
 
