@@ -2,18 +2,26 @@
 
 #' Count the 'good' and 'informative' cases by comparing input with the reference database.
 #'
-#' @param input_vec A input vector contains index of transformed regions by applying import_input_regions.
-#' @param bin_width width of bin.
-#' @param genome the genome of TR ChIP-seq data, either as "hg38" or "mm10".
+#' @param input_vec A numeric vector containing indices of transformed regions
+#'   obtained by applying \code{import_input_regions}.
+#' @param bin_width Width of bin in base pairs.
+#' @param genome The genome of TR ChIP-seq data, either "hg38" or "mm10".
 #'
-#' @return a data frame has three columns, TR labels, number of 'good' cases, number of 'total' informative cases.
-alignment_wrapper <- function(input_vec, bin_width, genome=c("hg38", "mm10")) {
+#' @return A data frame with three columns: TR labels, number of 'good' cases,
+#'   and number of 'total' informative cases.
+#' @export
+alignment_wrapper <- function(input_vec, bin_width, genome = c("hg38", "mm10")) {
 
   # Validate genome input
   genome <- match.arg(genome)
 
+  # Validate input vector
+  if (!is.numeric(input_vec) || length(input_vec) == 0) {
+    stop("input_vec must be a non-empty numeric vector")
+  }
+
   # Load the meta table
-  cat("Loading meta table...\n")
+  message("Loading meta table...")
   meta_table_path <- system.file("meta_table.rds", package = "vBIT")
 
   if (!file.exists(meta_table_path)) {
@@ -23,18 +31,34 @@ alignment_wrapper <- function(input_vec, bin_width, genome=c("hg38", "mm10")) {
   meta_table <- readRDS(meta_table_path)
 
   # Get the appropriate ChIP-seq reference data
-  file_table <- meta_table[[paste0("meta_", genome, "_", bin_width)]]
+  meta_key <- paste0("meta_", genome, "_", bin_width)
+  file_table <- meta_table[[meta_key]]
 
   if (is.null(file_table)) {
-    stop("ChIP-seq files not found. Please download and load the ChIP-seq data first.\n",
+    stop("ChIP-seq files not found for genome '", genome, "' and bin width '", bin_width, "'. ",
+         "Please download and load the ChIP-seq data first using load_chip_data().\n",
          "You may follow the tutorial on: https://github.com/ZeyuL01/BIT")
   }
 
+  # Validate file table structure
+  if (!all(c("TR", "File_Path") %in% colnames(file_table))) {
+    stop("Invalid meta table structure. Expected columns 'TR' and 'File_Path'.")
+  }
+
+  if (nrow(file_table) == 0) {
+    stop("No ChIP-seq files found in the meta table.")
+  }
+
   # Initialize the results table
-  chip_table <- data.frame(TR = file_table$TR, GOOD = numeric(nrow(file_table)), TOTAL = numeric(nrow(file_table)))
+  chip_table <- data.frame(
+    TR = file_table$TR,
+    GOOD = numeric(nrow(file_table)),
+    TOTAL = numeric(nrow(file_table)),
+    stringsAsFactors = FALSE
+  )
 
   # Progress bar setup
-  cat("Starting alignment process...\n")
+  message("Starting alignment process for ", nrow(chip_table), " TR ChIP-seq datasets...")
   pb <- txtProgressBar(min = 0, max = nrow(chip_table), style = 3, width = 50, char = "=")
 
   # Preallocate vectors for storing results
@@ -43,9 +67,10 @@ alignment_wrapper <- function(input_vec, bin_width, genome=c("hg38", "mm10")) {
 
   # Loop over each ChIP-seq file and perform alignment
   for (i in seq_len(nrow(chip_table))) {
+    # Read reference vector from file
     ref_vec <- data.table::fread(file_table$File_Path[i])[[1]]
 
-    # Perform alignment
+    # Perform alignment using C++ function
     alignment_result <- Alignment(input_vec, ref_vec)
 
     # Store results in pre-allocated vectors
@@ -62,6 +87,8 @@ alignment_wrapper <- function(input_vec, bin_width, genome=c("hg38", "mm10")) {
   # Update chip_table with results
   chip_table$GOOD <- good_vec
   chip_table$TOTAL <- total_vec
+
+  message("Alignment completed successfully. Processed ", nrow(chip_table), " TRs.")
 
   return(chip_table)
 }
@@ -157,65 +184,223 @@ import_input_regions <- function(file, format = NULL, bin_width = 1000, genome=c
 ##functions to load chip-seq datasets
 ##just need to run once.
 
-#' load the pre-compiled chip-seq data.
-#' @description load the pre-compiled chip-seq data. Please follow the tutorial on: https://github.com/ZeyuL01/BIT.
-#' @param data_path path to the ChIP-seq data folder, can be absolute or relative path.
-#' @param bin_width width of bin, which should be in 100/200/500/1000 and map with your ChIP-seq data.
+#' Load pre-compiled ChIP-seq data
 #'
+#' @description
+#' Load and organize pre-compiled ChIP-seq data for vBIT analysis. This function
+#' scans the specified directory for ChIP-seq files, extracts transcription regulator
+#' (TR) labels, and creates a meta table for efficient data access. Please follow
+#' the tutorial on: https://github.com/ZeyuL01/BIT.
+#'
+#' @param data_path Character string. Path to the ChIP-seq data folder, can be
+#'   absolute or relative path.
+#' @param bin_width Integer. Width of bin in base pairs, must be one of: 100, 200, 500, 1000.
+#'   This should match your ChIP-seq data resolution.
+#' @param genome Character string. The reference genome, either "hg38" or "mm10".
+#' @param overwrite Logical. Whether to overwrite existing meta table for the same
+#'   genome and bin width combination. Default: FALSE.
+#'
+#' @return Invisibly returns the created meta table data frame.
 #' @export
-load_chip_data <- function(data_path, bin_width, genome=c("hg38","mm10")){
-  data_path = R.utils::getAbsolutePath(data_path)
-  #Check the parameters
-  if (!genome %in% c("hg38", "mm10")) {
-    stop("Unsupported genome. Please use 'hg38' or 'mm10'.")
+load_chip_data <- function(data_path, bin_width, genome = c("hg38", "mm10"), overwrite = FALSE) {
+
+  # Validate genome input
+  genome <- match.arg(genome)
+
+  # Validate bin_width
+  supported_bin_widths <- c(100, 200, 500, 1000)
+  if (!bin_width %in% supported_bin_widths) {
+    stop("bin_width must be one of: ", paste(supported_bin_widths, collapse = ", "))
   }
 
-  if(!bin_width %in% c(100,200,500,1000)){
-    stop("bin width should be 100/200/500/1000!")
+  # Convert to absolute path and validate directory
+  data_path <- R.utils::getAbsolutePath(data_path)
+  if (!dir.exists(data_path)) {
+    stop("ChIP-seq data directory does not exist: ", data_path)
   }
 
-  if(dir.exists(data_path)){
-    if(!file.exists(paste0(system.file(package = "vBIT"),"/meta_table.rds"))){
+  # Get meta table file path
+  meta_table_path <- file.path(system.file(package = "vBIT"), "meta_table.rds")
 
-      data_list<-list()
-      data_list[["path"]]=data_path
+  # Check if meta table exists
+  meta_table_exists <- file.exists(meta_table_path)
 
-      ChIP_seq_files<-list.files(data_path)
-      TR_labels<-sapply(strsplit(ChIP_seq_files,"_",fixed=TRUE),function(x){return(x[[1]])})
-      meta_table<-data.frame(matrix(ncol=2,nrow=length(ChIP_seq_files)))
-      colnames(meta_table)<-c("TR","File_Path")
+  if (meta_table_exists) {
+    message("Loading existing meta table...")
+    data_list <- readRDS(meta_table_path)
 
-      meta_table$TR <- TR_labels
-      meta_table$File_Path <- paste0(data_path,"/",ChIP_seq_files)
-
-      data_list[[paste0("meta_",genome,"_",bin_width)]] = meta_table
-
-      saveRDS(data_list,paste0(system.file(package = "vBIT"),"/meta_table.rds"))
-
-    }else{
-      data_list <- readRDS(paste0(system.file(package = "vBIT"),"/meta_table.rds"))
-      if(!is.null(data_list[[paste0("meta_",genome,"_",bin_width)]])){
-        warning("Overwriting previous loaded meta-table for bin width of ", bin_width)
-      }
-      ChIP_seq_files<-list.files(data_path)
-      TR_labels<-sapply(strsplit(ChIP_seq_files,"_",fixed=TRUE),function(x){return(x[[1]])})
-      meta_table<-data.frame(matrix(ncol=2,nrow=length(ChIP_seq_files)))
-      colnames(meta_table)<-c("TR","File_Path")
-
-      meta_table$TR <- TR_labels
-      meta_table$File_Path <- paste0(data_path,"/",ChIP_seq_files)
-
-      data_list[[paste0("meta_",genome,"_",bin_width)]] = meta_table
-
-      saveRDS(data_list,paste0(system.file(package = "vBIT"),"/meta_table.rds"))
+    # Check if entry already exists for this genome and bin width
+    meta_key <- paste0("meta_", genome, "_", bin_width)
+    if (!is.null(data_list[[meta_key]]) && !overwrite) {
+      stop("Meta table for genome '", genome, "' and bin width '", bin_width, "' already exists. ",
+           "Use overwrite = TRUE to replace it.")
     }
-  }else{
-
-    stop("ChIP-seq data directory does not exist.")
-
+  } else {
+    message("Creating new meta table...")
+    data_list <- list()
   }
-  print("ChIP-seq data successfully loaded, please run BIT with input to check!")
-  return()
+
+  # Scan directory for ChIP-seq files
+  message("Scanning directory for ChIP-seq files...")
+  chip_seq_files <- list.files(data_path, full.names = FALSE)
+
+  if (length(chip_seq_files) == 0) {
+    stop("No files found in the ChIP-seq data directory: ", data_path)
+  }
+
+  # Extract TR labels from filenames
+  # Expected format: TR_label_*.txt or similar
+  tr_labels <- sapply(strsplit(chip_seq_files, "_", fixed = TRUE), function(x) {
+    if (length(x) >= 1) return(x[1]) else return(NA)
+  })
+
+  # Remove any NA values
+  valid_indices <- !is.na(tr_labels)
+  chip_seq_files <- chip_seq_files[valid_indices]
+  tr_labels <- tr_labels[valid_indices]
+
+  if (length(tr_labels) == 0) {
+    stop("No valid TR labels could be extracted from filenames. ",
+         "Expected format: TR_label_*.txt")
+  }
+
+  # Create meta table
+  meta_table <- data.frame(
+    TR = tr_labels,
+    File_Path = file.path(data_path, chip_seq_files),
+    stringsAsFactors = FALSE
+  )
+
+  # Validate file existence
+  file_exists <- file.exists(meta_table$File_Path)
+  if (!all(file_exists)) {
+    missing_files <- meta_table$File_Path[!file_exists]
+    warning("Some files do not exist: ", paste(basename(missing_files), collapse = ", "))
+  }
+
+  # Store in data list
+  meta_key <- paste0("meta_", genome, "_", bin_width)
+  data_list[[meta_key]] <- meta_table
+
+  # Save meta table
+  message("Saving meta table...")
+  saveRDS(data_list, meta_table_path)
+
+    # Summary
+  message("ChIP-seq data successfully loaded!")
+  message("  - Genome: ", genome)
+  message("  - Bin width: ", bin_width)
+  message("  - Number of TRs: ", nrow(meta_table))
+  message("  - Files processed: ", sum(file_exists), "/", length(file_exists))
+  message("")
+  message("You can use check_loaded_chip_data() to view all loaded ChIP-seq data.")
+
+  return(invisible(meta_table))
+}
+
+#' Check loaded ChIP-seq data
+#'
+#' @description
+#' Retrieve and display information about loaded ChIP-seq data meta tables.
+#' This function provides an overview of all available genome and bin width
+#' combinations that have been loaded.
+#'
+#' @param genome Character string. Optional filter for specific genome ("hg38" or "mm10").
+#'   If NULL, returns data for all genomes.
+#' @param bin_width Integer. Optional filter for specific bin width (100, 200, 500, 1000).
+#'   If NULL, returns data for all bin widths.
+#'
+#' @return A data frame containing information about loaded ChIP-seq data, or NULL
+#'   if no data is loaded.
+#' @export
+check_loaded_chip_data <- function(genome = NULL, bin_width = NULL) {
+
+  # Validate optional filters
+  if (!is.null(genome)) {
+    genome <- match.arg(genome, choices = c("hg38", "mm10"))
+  }
+
+  if (!is.null(bin_width)) {
+    supported_bin_widths <- c(100, 200, 500, 1000)
+    if (!bin_width %in% supported_bin_widths) {
+      stop("bin_width must be one of: ", paste(supported_bin_widths, collapse = ", "))
+    }
+  }
+
+  # Get meta table file path
+  meta_table_path <- file.path(system.file(package = "vBIT"), "meta_table.rds")
+
+  if (!file.exists(meta_table_path)) {
+    message("No ChIP-seq data has been loaded yet.")
+    return(NULL)
+  }
+
+  # Load meta table
+  data_list <- readRDS(meta_table_path)
+
+  # Extract available keys
+  available_keys <- names(data_list)
+  meta_keys <- available_keys[grepl("^meta_", available_keys)]
+
+  if (length(meta_keys) == 0) {
+    message("No ChIP-seq meta tables found.")
+    return(NULL)
+  }
+
+  # Parse keys to extract genome and bin width information
+  key_info <- data.frame(
+    Key = meta_keys,
+    Genome = sapply(strsplit(meta_keys, "_"), function(x) x[2]),
+    Bin_Width = as.integer(sapply(strsplit(meta_keys, "_"), function(x) x[3])),
+    stringsAsFactors = FALSE
+  )
+
+  # Apply filters if specified
+  if (!is.null(genome)) {
+    key_info <- key_info[key_info$Genome == genome, , drop = FALSE]
+  }
+
+  if (!is.null(bin_width)) {
+    key_info <- key_info[key_info$Bin_Width == bin_width, , drop = FALSE]
+  }
+
+  if (nrow(key_info) == 0) {
+    message("No ChIP-seq data found matching the specified criteria.")
+    return(NULL)
+  }
+
+  # Get detailed information for each key
+  result_list <- list()
+  for (i in seq_len(nrow(key_info))) {
+    key <- key_info$Key[i]
+    meta_table <- data_list[[key]]
+
+    if (!is.null(meta_table) && nrow(meta_table) > 0) {
+      # Check file existence
+      file_exists <- file.exists(meta_table$File_Path)
+
+      result_list[[i]] <- data.frame(
+        Genome = key_info$Genome[i],
+        Bin_Width = key_info$Bin_Width[i],
+        Num_TRs = nrow(meta_table),
+        Files_Available = sum(file_exists),
+        Files_Total = length(file_exists),
+        Data_Path = dirname(meta_table$File_Path[1]),
+        stringsAsFactors = FALSE
+      )
+    }
+  }
+
+  if (length(result_list) == 0) {
+    message("No valid ChIP-seq data found.")
+    return(NULL)
+  }
+
+  # Combine results
+  result <- do.call(rbind, result_list)
+  rownames(result) <- NULL
+
+  return(result)
 }
 
 
@@ -648,16 +833,9 @@ logistic <- function(x) {
 #'
 #' @return index of peak index after the filtering
 #'
-filter_by_distal <- function(input_vec, genome=c("hg38","mm10")){
-  if(genome=="hg38"){
-    distal_index<-dELS_data
-  }else if(genome=="mm10"){
-    distal_index<-mm10_dELS_data
-  }else{
-    stop("Please check the selected genome.")
-  }
+filter_peaks <- function(input_vec, filter_vec){
 
-  filtered_input_vec<-intersect(input_vec,distal_index)
+  filtered_input_vec<-intersect(input_vec,filter_vec)
 
   return(filtered_input_vec)
 }
@@ -665,6 +843,7 @@ filter_by_distal <- function(input_vec, genome=c("hg38","mm10")){
 
 #' Plot Gene Regulatory Network
 #'
+#' @description
 #' This function reads peak data and transcription regulator (TR) information
 #' to construct and visualize a gene regulatory network, integrating data
 #' from STRINGdb and TFLink databases.
@@ -679,7 +858,7 @@ filter_by_distal <- function(input_vec, genome=c("hg38","mm10")){
 #'   "number" - selects genes based on peak frequency (top proportion).
 #'   Default is "number".
 #' @param tss_region Numeric vector of length 2. Region around TSS for peak annotation (e.g., c(-3000, 3000)). Default is c(-3000, 3000).
-#' @param number_proportion Numeric. Proportion of top genes to select when `link = "number"`. Default is 0.005 (top 0.5%).
+#' @param number_proportion Numeric. Proportion of top genes to select when `link = "number"`. Default is 0.005 (top 0.5\%).
 #' @param string_score_threshold Integer. Minimum interaction score for STRINGdb connections (0-1000). Default is 400.
 #' @param node_size Numeric. Base size for nodes in the plot. Default is 5.
 #' @param label_size Numeric. Size for node labels in the plot. Default is 3.

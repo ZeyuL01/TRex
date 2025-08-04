@@ -4,14 +4,21 @@
 \alias{import_input_regions}
 \title{Transform the input file to vector}
 \usage{
-import_input_regions(file, format = NULL, bin_width = 1000)
+import_input_regions(
+  file,
+  format = NULL,
+  bin_width = 1000,
+  genome = c("hg38", "mm10")
+)
 }
 \arguments{
 \item{file}{file path to the user-input.}
 
 \item{format}{format can be .bed, .narrowPeak, .broadPeak and .bigNarrowPeak.}
 
-\item{bin_width}{desired width of bin, should be in 100/500/1000.}
+\item{bin_width}{desired width of bin, default: 1000.}
+
+\item{genome}{the genome of TR ChIP-seq data, either as "hg38" or "mm10".}
 }
 \value{
 A numeric vector contains the index of peaks with pre-specified number of bins in each chromosome.

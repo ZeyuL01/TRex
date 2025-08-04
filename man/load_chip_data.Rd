@@ -2,15 +2,33 @@
 % Please edit documentation in R/Function.R
 \name{load_chip_data}
 \alias{load_chip_data}
-\title{load the pre-compiled chip-seq data.}
+\title{Load pre-compiled ChIP-seq data}
 \usage{
-load_chip_data(data_path, bin_width)
+load_chip_data(
+  data_path,
+  bin_width,
+  genome = c("hg38", "mm10"),
+  overwrite = FALSE
+)
 }
 \arguments{
-\item{data_path}{path to the ChIP-seq data folder, can be absolute or relative path.}
+\item{data_path}{Character string. Path to the ChIP-seq data folder, can be
+absolute or relative path.}
 
-\item{bin_width}{width of bin, which should be in 100/500/1000 and map with your ChIP-seq data.}
+\item{bin_width}{Integer. Width of bin in base pairs, must be one of: 100, 200, 500, 1000.
+This should match your ChIP-seq data resolution.}
+
+\item{genome}{Character string. The reference genome, either "hg38" or "mm10".}
+
+\item{overwrite}{Logical. Whether to overwrite existing meta table for the same
+genome and bin width combination. Default: FALSE.}
+}
+\value{
+Invisibly returns the created meta table data frame.
 }
 \description{
-load the pre-compiled chip-seq data. Please follow the tutorial on: https://github.com/ZeyuL01/BIT.
+Load and organize pre-compiled ChIP-seq data for vBIT analysis. This function
+scans the specified directory for ChIP-seq files, extracts transcription regulator
+(TR) labels, and creates a meta table for efficient data access. Please follow
+the tutorial on: https://github.com/ZeyuL01/BIT.
 }
