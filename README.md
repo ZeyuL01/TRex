@@ -47,6 +47,14 @@ For Mac users, please refer to: [Rcpp on macOS](https://thecoatlessprofessor.com
 
 For Windows users, please refer to: [R Development on Windows](https://cran.r-project.org/bin/windows/base/howto-R-devel.html)
 
+## 🌐 Online Web Portal
+
+**No installation required!** We offer a convenient online web portal that implements vBIT:
+
+**[www.vbit.online](https://www.vbit.online)**
+
+The web portal provides the same functionality as the R package without requiring any local installation or setup. Simply upload your data and get results instantly.
+
 ## Reference ChIP-seq Data
 
 vBIT uses the same pre-compiled reference data as BIT, containing 10,140 TR ChIP-seq datasets associated with 988 human TRs and 5,681 TR ChIP-seq datasets associated with 607 mouse TRs. These data can be downloaded from the Zenodo online data repository:
