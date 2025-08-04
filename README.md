@@ -10,7 +10,8 @@
 
 </p>
 
-## A High-Resolution Pan-Cancer Atlas of Transcriptional Regulators Reveals Oncogenic Regulatory Programs
+## variational Bayesian Identification of Transcriptional Regulators
+This package is part of the manuscript: "A High-Resolution Pan-Cancer Atlas of Transcriptional Regulators Reveals Oncogenic Regulatory Programs"
 
 ![Open Source](https://img.shields.io/badge/Open%20Source-Yes-brightgreen.svg)
 ![Made with R](https://img.shields.io/badge/Made%20with-R-276DC3.svg)
