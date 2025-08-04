@@ -52,7 +52,7 @@ For Windows users, please refer to: [R Development on Windows](https://cran.r-pr
 
 **No installation required!** We offer a convenient online web portal that implements vBIT:
 
-**[www.vbit.online](https://www.vbit.online)**
+**[www.vbit.online](http://www.vbit.online)**
 
 The web portal provides the same functionality as the R package without requiring any local installation or setup. Simply upload your data and get results instantly.
 
