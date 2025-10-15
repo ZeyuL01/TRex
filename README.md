@@ -50,7 +50,7 @@ For Windows users, please refer to: [R Development on Windows](https://cran.r-pr
 
 ## 🌐 Online Web Portal
 
-**No installation required!** We offer a convenient online web portal that implements vBIT:
+**No installation required!** We offer a convenient online web portal that implements TRex:
 
 **[www.TRex.online](http://www.TRex.online)**
 
