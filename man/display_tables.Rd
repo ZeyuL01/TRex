@@ -17,5 +17,5 @@ display_tables(file_path, output_path)
 a data.frame object contains TR names, theta_i, BIT scores and 95 CIs for each TR.
 }
 \description{
-To show the ranking table by inspecting the results of Gibbs sampler.
+To show the ranking table by inspecting the results of variational inference.
 }

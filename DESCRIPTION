@@ -1,23 +1,40 @@
-Package: vBIT
+Package: TRex
 Type: Package
-Title: What the Package Does in One 'Title Case' Line
+Title: variational Bayesian Transcriptional Regulator explorer
 Version: 1.0
 Date: 2024-06-16
-Author: Your Name
-Maintainer: Your Name <your@email.com>
-Description: One paragraph description of what the package does as one or more full sentences.
-License: GPL (>= 2)
+Author: Zeyu Lu
+Maintainer: Zeyu Lu <zeyu.lu@uta.edu>
+Description: Implements a variational Bayesian framework to infer transcriptional 
+    regulator activity from ChIP-seq–derived summaries. The package maps input 
+    regions to genomic bins, aligns them to reference TR profiles, and produces 
+    ranked regulators with uncertainty summaries and optional visualizations.
+License: GPL (>= 3)
 Imports:
-    igraph,
-    ggraph,
-    ggplot2,
+    Rcpp,
+    data.table,
+    rtracklayer,
+    GenomicRanges,
+    R.utils,
+    tools,
     dplyr,
+    ggplot2,
+    ggraph,
+    igraph,
     readr
 Suggests:
+    ChIPseeker,
+    clusterProfiler,
+    biomaRt,
+    STRINGdb,
+    AnnotationDbi,
     TxDb.Hsapiens.UCSC.hg38.knownGene,
     org.Hs.eg.db,
     TxDb.Mmusculus.UCSC.mm10.knownGene,
     org.Mm.eg.db,
+    basicPlotteR
 LinkingTo: Rcpp, RcppArmadillo, RcppDist, RcppProgress
-RoxygenNote: 7.3.2
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
 LazyData: TRUE

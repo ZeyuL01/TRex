@@ -15,7 +15,7 @@ If NULL, returns data for all bin widths.}
 }
 \value{
 A data frame containing information about loaded ChIP-seq data, or NULL
-  if no data is loaded.
+if no data is loaded.
 }
 \description{
 Retrieve and display information about loaded ChIP-seq data meta tables.

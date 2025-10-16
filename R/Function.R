@@ -1,14 +1,14 @@
-##functions to transform regions to bins.
-
-#' Count the 'good' and 'informative' cases by comparing input with the reference database.
+#' alignment_wrapper: count 'good' and 'total' cases per TR
 #'
-#' @param input_vec A numeric vector containing indices of transformed regions
-#'   obtained by applying \code{import_input_regions}.
+#' @description
+#' Compare input region indices against the reference TR database to count
+#' the number of 'good' and total informative cases for each TR.
+#'
+#' @param input_vec A numeric vector of indices from \code{import_input_regions()}.
 #' @param bin_width Width of bin in base pairs.
-#' @param genome The genome of TR ChIP-seq data, either "hg38" or "mm10".
+#' @param genome The genome of TR ChIP-seq data, either \code{"hg38"} or \code{"mm10"}.
 #'
-#' @return A data frame with three columns: TR labels, number of 'good' cases,
-#'   and number of 'total' informative cases.
+#' @return A data frame with columns \code{TR}, \code{GOOD}, and \code{TOTAL}.
 #' @export
 alignment_wrapper <- function(input_vec, bin_width, genome = c("hg38", "mm10")) {
 
@@ -22,7 +22,7 @@ alignment_wrapper <- function(input_vec, bin_width, genome = c("hg38", "mm10")) 
 
   # Load the meta table
   message("Loading meta table...")
-  meta_table_path <- system.file("meta_table.rds", package = "vBIT")
+  meta_table_path <- system.file("meta_table.rds", package = "TRex")
 
   if (!file.exists(meta_table_path)) {
     stop("Meta table not found in package directory. Please ensure the package is installed correctly.")
@@ -151,43 +151,45 @@ import_input_regions <- function(file, format = NULL, bin_width = 1000, genome=c
 
     inds <- switch(format,
                    bed = {
-                     start <- rtracklayer::start(peak_dat[GenomicRanges::seqnames(peak_dat) == chr_lab])
-                     end <- rtracklayer::end(peak_dat[GenomicRanges::seqnames(peak_dat) == chr_lab])
-                     (end + start) %/% (2 * bin_width) + 1
+                     gr <- peak_dat[GenomicRanges::seqnames(peak_dat) == chr_lab]
+                     if (length(gr)) (GenomicRanges::start(gr) + GenomicRanges::end(gr)) %/% (2 * bin_width) + 1 else integer()
                    },
                    narrowPeak = {
-                     start <- rtracklayer::start(peak_dat[GenomicRanges::seqnames(peak_dat)==chr_lab])
-                     (start+peak_dat[GenomicRanges::seqnames(peak_dat)==chr_lab]$peak)%/% bin_width + 1
+                     gr <- peak_dat[GenomicRanges::seqnames(peak_dat) == chr_lab]
+                     if (length(gr) && "peak" %in% names(mcols(gr))) {
+                       (GenomicRanges::start(gr) + mcols(gr)$peak) %/% bin_width + 1
+                     } else integer()
                    },
                    broadPeak = {
-                     start <- rtracklayer::start(peak_dat[GenomicRanges::seqnames(peak_dat)==chr_lab])
-                     (start+peak_dat[GenomicRanges::seqnames(peak_dat)==chr_lab]$abs_summit)%/% bin_width + 1
+                     gr <- peak_dat[GenomicRanges::seqnames(peak_dat) == chr_lab]
+                     if (length(gr)) (GenomicRanges::start(gr) + GenomicRanges::end(gr)) %/% (2 * bin_width) + 1 else integer()
                    },
-                   bigNarrowPeak = peak_dat[GenomicRanges::seqnames(peak_dat) == chr_lab]$abs_summit %/% bin_width + 1,
+                   bigNarrowPeak = {
+                     gr <- peak_dat[GenomicRanges::seqnames(peak_dat) == chr_lab]
+                     if (length(gr) && "abs_summit" %in% names(mcols(gr))) {
+                       mcols(gr)$abs_summit %/% bin_width + 1
+                     } else integer()
+                   },
                    csv = {
-                     start <- peak_dat$Start[peak_dat$Chrom == chr_lab]
-                     end <- peak_dat$End[peak_dat$Chrom == chr_lab]
-                     (end + start) %/% (2 * bin_width) + 1
+                     idx <- which(peak_dat$Chrom == chr_lab)
+                     if (length(idx)) (peak_dat$End[idx] + peak_dat$Start[idx]) %/% (2 * bin_width) + 1 else integer()
                    }
     )
 
-    inds <- inds[inds <= chr_win_num]
-    inds <- inds[!duplicated(inds)]
-    bin_inds <- c(bin_inds, (chr_windows_cs[i] + inds))
+    # keep in-range, unique, finite
+    inds <- inds[is.finite(inds) & inds >= 1 & inds <= chr_win_num]
+    inds <- unique(inds)
+    if (length(inds)) bin_inds <- c(bin_inds, chr_windows_cs[i] + inds)
   }
 
   return(sort(bin_inds))
 }
 
 
-
-##functions to load chip-seq datasets
-##just need to run once.
-
 #' Load pre-compiled ChIP-seq data
 #'
 #' @description
-#' Load and organize pre-compiled ChIP-seq data for vBIT analysis. This function
+#' Load and organize pre-compiled ChIP-seq data for TRex analysis. This function
 #' scans the specified directory for ChIP-seq files, extracts transcription regulator
 #' (TR) labels, and creates a meta table for efficient data access. Please follow
 #' the tutorial on: https://github.com/ZeyuL01/BIT.
@@ -220,7 +222,7 @@ load_chip_data <- function(data_path, bin_width, genome = c("hg38", "mm10"), ove
   }
 
   # Get meta table file path
-  meta_table_path <- file.path(system.file(package = "vBIT"), "meta_table.rds")
+  meta_table_path <- file.path(system.file(package = "TRex"), "meta_table.rds")
 
   # Check if meta table exists
   meta_table_exists <- file.exists(meta_table_path)
@@ -328,7 +330,7 @@ check_loaded_chip_data <- function(genome = NULL, bin_width = NULL) {
   }
 
   # Get meta table file path
-  meta_table_path <- file.path(system.file(package = "vBIT"), "meta_table.rds")
+  meta_table_path <- file.path(system.file(package = "TRex"), "meta_table.rds")
 
   if (!file.exists(meta_table_path)) {
     message("No ChIP-seq data has been loaded yet.")
@@ -405,7 +407,7 @@ check_loaded_chip_data <- function(genome = NULL, bin_width = NULL) {
 
 
 #' display_tables
-#' @description To show the ranking table by inspecting the results of Gibbs sampler.
+#' @description To show the ranking table by inspecting the results of variational inference.
 #' @param file_path path to the saved BIT Gibbs sampling results.
 #' @param output_path path to save the rank table.
 #' @param burnin number of samples used for burn-in. If not specify, BIT will use the half of the iterations as burn in.
@@ -841,67 +843,43 @@ filter_peaks <- function(input_vec, filter_vec){
 }
 
 
-#' Plot Gene Regulatory Network
+#' Plot a gene regulatory network from peaks and TRs
 #'
 #' @description
-#' This function reads peak data and transcription regulator (TR) information
-#' to construct and visualize a gene regulatory network, integrating data
-#' from STRINGdb and TFLink databases.
+#' Constructs and visualizes a gene regulatory network (GRN) from an input peak
+#' file and a table of transcriptional regulators (TRs). Peaks are annotated to
+#' genes, targets are selected by frequency or pathway enrichment, and edges are
+#' drawn using STRINGdb and TFLink interactions.
 #'
-#' @param input_file_path Character string. Path to the peak file (e.g., BED format).
-#' @param input_table_path Character string. Path to the CSV file containing TRs,
-#'   expected to have a column named 'TR'.
-#' @param thres_TRs Integer. The number of top TRs to include from `input_table_path`. Default is 10.
-#' @param genome Character string. The reference genome, either "hg38" or "mm10".
-#' @param link Character string. Method to select target genes:
-#'   "pathway" - selects genes from the top enriched GO BP pathway.
-#'   "number" - selects genes based on peak frequency (top proportion).
-#'   Default is "number".
-#' @param tss_region Numeric vector of length 2. Region around TSS for peak annotation (e.g., c(-3000, 3000)). Default is c(-3000, 3000).
-#' @param number_proportion Numeric. Proportion of top genes to select when `link = "number"`. Default is 0.005 (top 0.5\%).
-#' @param string_score_threshold Integer. Minimum interaction score for STRINGdb connections (0-1000). Default is 400.
-#' @param node_size Numeric. Base size for nodes in the plot. Default is 5.
-#' @param label_size Numeric. Size for node labels in the plot. Default is 3.
-#' @param layout_algorithm Character string. Layout algorithm for ggraph (e.g., 'fr', 'kk', 'nicely'). Default is 'fr' (Fruchterman-Reingold).
-#' @param vbit_package_name Character string. The name of the package where TFLink data resides, needed for `system.file`. Default is "vBIT".
+#' @param input_file_path Character. Path to a peak file (e.g., BED).
+#' @param input_table_path Character. Path to a CSV with a column \code{TR}.
+#' @param thres_TRs Integer. Number of top TRs to include. Default \code{10}.
+#' @param genome Character. One of \code{"hg38"} or \code{"mm10"}.
+#' @param link Character. Target selection method, \code{"number"} or \code{"pathway"}.
+#' @param tss_region Numeric length-2. TSS window passed to \code{ChIPseeker::annotatePeak()}.
+#' @param number_proportion Numeric. Top proportion for \code{link = "number"}.
+#'   Default \code{0.005} (top \code{0.5\%}).
+#' @param string_score_threshold Integer. Minimum STRINGdb score (0–1000). Default \code{400}.
+#' @param node_size,label_size Numeric. Sizes for nodes and labels.
+#' @param layout_algorithm Character. Layout passed to \code{ggraph}, e.g., \code{"nicely"}.
+#' @param TRex_package_name Character. Package name hosting TFLink data. Default \code{"TRex"}.
 #'
-#' @return A ggraph plot object representing the gene regulatory network.
-#'
-#' @importFrom ChIPseeker readPeakFile annotatePeak
-#' @importFrom clusterProfiler enrichGO
-#' @importFrom biomaRt useMart getBM
-#' @importFrom STRINGdb STRINGdb
-#' @importFrom igraph graph_from_data_frame V E
-#' @importFrom ggraph ggraph geom_edge_link geom_node_point geom_node_text theme_graph create_layout
-#' @importFrom dplyr filter select rename left_join bind_rows distinct arrange desc %>% slice_head
-#' @importFrom readr read_csv cols
-#' @importFrom data.table fread
-#' @importFrom methods as
-#' @importFrom stats quantile
-#' @importFrom AnnotationDbi select
-#' @importFrom utils head installed.packages
-#'
+#' @return A \code{ggraph} plot object.
 #' @export
 #'
 #' @examples
 #' \dontrun{
-#' # Example usage (requires valid input files and package installation)
-#' peak_file <- "path/to/your/peaks.bed"
-#' tr_file <- "path/to/your/tr_table.csv"
-#'
-#' # Create dummy files for demonstration if needed
-#' # writeLines(c("chr1\t1000\t1500", "chr1\t2000\t2500"), peak_file)
-#' # write.csv(data.frame(TR = c("TF1", "TF2", "TF3")), tr_file, row.names = FALSE)
-#'
-#' grn_plot <- plot_GRN(
+#' peak_file <- "peaks.bed"
+#' tr_file   <- "trs.csv"
+#' # readr::write_csv(data.frame(TR = c("TF1","TF2","TF3")), tr_file)
+#' p <- plot_GRN(
 #'   input_file_path = peak_file,
 #'   input_table_path = tr_file,
 #'   thres_TRs = 3,
-#'   genome = "hg38", # or "mm10"
+#'   genome = "hg38",
 #'   link = "number"
 #' )
-#'
-#' print(grn_plot)
+#' print(p)
 #' }
 plot_GRN <- function(input_file_path,
                      input_table_path,
@@ -914,7 +892,7 @@ plot_GRN <- function(input_file_path,
                      node_size = 5,
                      label_size = 3,
                      layout_algorithm = 'nicely',
-                     vbit_package_name = "vBIT") {
+                     TRex_package_name = "TRex") {
 
   # --- Input Validation and Argument Matching ---
   genome <- match.arg(genome)
@@ -926,8 +904,8 @@ plot_GRN <- function(input_file_path,
   if (!file.exists(input_table_path)) {
     stop("Input TR table file not found: ", input_table_path)
   }
-  if (! (vbit_package_name %in% rownames(installed.packages())) ) {
-    warning("Package '", vbit_package_name, "' not found. Cannot load TFLink data from package path.")
+  if (! (TRex_package_name %in% rownames(installed.packages())) ) {
+    warning("Package '", TRex_package_name, "' not found. Cannot load TFLink data from package path.")
     # Consider adding alternative TFLink loading mechanism or stopping execution
     # For now, we'll let it fail later if system.file returns empty string.
   }
@@ -941,16 +919,16 @@ plot_GRN <- function(input_file_path,
     species_id <- 9606
     ensembl_dataset <- "hsapiens_gene_ensembl"
     symbol_col <- "hgnc_symbol" # Column name for gene symbols in biomaRt result
-    tflink_ss_file <- paste0(system.file(package = vbit_package_name), "/data/TFLink_Human_SS_v1.0.tsv")
-    tflink_ls_file <- paste0(system.file(package = vbit_package_name), "/data/TFLink_Human_LS_v1.0.tsv")
+    tflink_ss_file <- paste0(system.file(package = TRex_package_name), "/data/TFLink_Human_SS_v1.0.tsv")
+    tflink_ls_file <- paste0(system.file(package = TRex_package_name), "/data/TFLink_Human_LS_v1.0.tsv")
   } else if (genome == "mm10") {
     txdb <- TxDb.Mmusculus.UCSC.mm10.knownGene # Corrected TxDb for mm10
     anno_db <- "org.Mm.eg.db"
     species_id <- 10090
     ensembl_dataset <- "mmusculus_gene_ensembl"
     symbol_col <- "mgi_symbol" # Column name for gene symbols in biomaRt result
-    tflink_ss_file <- paste0(system.file(package = vbit_package_name), "/data/TFLink_Mice_SS_v1.0.tsv")
-    tflink_ls_file <- paste0(system.file(package = vbit_package_name), "/data/TFLink_Mice_LS_v1.0.tsv")
+    tflink_ss_file <- paste0(system.file(package = TRex_package_name), "/data/TFLink_Mice_SS_v1.0.tsv")
+    tflink_ls_file <- paste0(system.file(package = TRex_package_name), "/data/TFLink_Mice_LS_v1.0.tsv")
   } else {
     # This case is redundant due to match.arg but kept for clarity
     stop("Unsupported genome specified.")

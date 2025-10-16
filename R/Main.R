@@ -1,4 +1,4 @@
-#' vBIT: Variational Bayesian Inference Tool for ChIP-seq Analysis
+#' TRex: variational Bayesian Transcriptional Regulators explorer
 #'
 #' @description
 #' Performs variational Bayesian inference on ChIP-seq data by comparing input regions
@@ -18,7 +18,7 @@
 #'
 #' @examples
 #' \dontrun{
-#' vBIT(
+#' TRex(
 #'   file = "peaks.bed",
 #'   output_path = "./results",
 #'   N = 3000,
@@ -27,7 +27,7 @@
 #' }
 #'
 #' @export
-vBIT <- function(
+TRex <- function(
   file,
   output_path,
   filter_path = NULL,
@@ -68,7 +68,7 @@ vBIT <- function(
   # INITIALIZATION
   # ============================================================================
 
-  cat("Starting vBIT Analysis\n")
+  cat("Starting TRex Analysis\n")
   cat("=", rep("=", 50), "\n", sep = "")
 
   # Convert to absolute path
@@ -198,7 +198,7 @@ vBIT <- function(
   # ============================================================================
 
   cat("\n", "=", rep("=", 50), "\n", sep = "")
-  cat("vBIT Analysis Completed Successfully!\n")
+  cat("TRex Analysis Completed Successfully!\n")
   cat("Results location:", output_path, "\n")
   cat("Main TR profile:", paste0(output_path, "/", base_name, "_rank_table.csv"),"\n")
   cat("VI file:", file_name, "\n")

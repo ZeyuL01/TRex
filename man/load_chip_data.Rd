@@ -27,7 +27,7 @@ genome and bin width combination. Default: FALSE.}
 Invisibly returns the created meta table data frame.
 }
 \description{
-Load and organize pre-compiled ChIP-seq data for vBIT analysis. This function
+Load and organize pre-compiled ChIP-seq data for TRex analysis. This function
 scans the specified directory for ChIP-seq files, extracts transcription regulator
 (TR) labels, and creates a meta table for efficient data access. Please follow
 the tutorial on: https://github.com/ZeyuL01/BIT.

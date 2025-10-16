@@ -2,7 +2,7 @@
 % Please edit documentation in R/Function.R
 \name{plot_GRN}
 \alias{plot_GRN}
-\title{Plot Gene Regulatory Network}
+\title{Plot a gene regulatory network from peaks and TRs}
 \usage{
 plot_GRN(
   input_file_path,
@@ -16,64 +16,54 @@ plot_GRN(
   node_size = 5,
   label_size = 3,
   layout_algorithm = "nicely",
-  vbit_package_name = "vBIT"
+  TRex_package_name = "TRex"
 )
 }
 \arguments{
-\item{input_file_path}{Character string. Path to the peak file (e.g., BED format).}
+\item{input_file_path}{Character. Path to a peak file (e.g., BED).}
 
-\item{input_table_path}{Character string. Path to the CSV file containing TRs,
-expected to have a column named 'TR'.}
+\item{input_table_path}{Character. Path to a CSV with a column \code{TR}.}
 
-\item{thres_TRs}{Integer. The number of top TRs to include from `input_table_path`. Default is 10.}
+\item{thres_TRs}{Integer. Number of top TRs to include. Default \code{10}.}
 
-\item{genome}{Character string. The reference genome, either "hg38" or "mm10".}
+\item{genome}{Character. One of \code{"hg38"} or \code{"mm10"}.}
 
-\item{link}{Character string. Method to select target genes:
-"pathway" - selects genes from the top enriched GO BP pathway.
-"number" - selects genes based on peak frequency (top proportion).
-Default is "number".}
+\item{link}{Character. Target selection method, \code{"number"} or \code{"pathway"}.}
 
-\item{tss_region}{Numeric vector of length 2. Region around TSS for peak annotation (e.g., c(-3000, 3000)). Default is c(-3000, 3000).}
+\item{tss_region}{Numeric length-2. TSS window passed to \code{ChIPseeker::annotatePeak()}.}
 
-\item{number_proportion}{Numeric. Proportion of top genes to select when `link = "number"`. Default is 0.005 (top 0.5\%).}
+\item{number_proportion}{Numeric. Top proportion for \code{link = "number"}.
+Default \code{0.005} (top \code{0.5\%}).}
 
-\item{string_score_threshold}{Integer. Minimum interaction score for STRINGdb connections (0-1000). Default is 400.}
+\item{string_score_threshold}{Integer. Minimum STRINGdb score (0–1000). Default \code{400}.}
 
-\item{node_size}{Numeric. Base size for nodes in the plot. Default is 5.}
+\item{node_size, label_size}{Numeric. Sizes for nodes and labels.}
 
-\item{label_size}{Numeric. Size for node labels in the plot. Default is 3.}
+\item{layout_algorithm}{Character. Layout passed to \code{ggraph}, e.g., \code{"nicely"}.}
 
-\item{layout_algorithm}{Character string. Layout algorithm for ggraph (e.g., 'fr', 'kk', 'nicely'). Default is 'fr' (Fruchterman-Reingold).}
-
-\item{vbit_package_name}{Character string. The name of the package where TFLink data resides, needed for `system.file`. Default is "vBIT".}
+\item{TRex_package_name}{Character. Package name hosting TFLink data. Default \code{"TRex"}.}
 }
 \value{
-A ggraph plot object representing the gene regulatory network.
+A \code{ggraph} plot object.
 }
 \description{
-This function reads peak data and transcription regulator (TR) information
-to construct and visualize a gene regulatory network, integrating data
-from STRINGdb and TFLink databases.
+Constructs and visualizes a gene regulatory network (GRN) from an input peak
+file and a table of transcriptional regulators (TRs). Peaks are annotated to
+genes, targets are selected by frequency or pathway enrichment, and edges are
+drawn using STRINGdb and TFLink interactions.
 }
 \examples{
 \dontrun{
-# Example usage (requires valid input files and package installation)
-peak_file <- "path/to/your/peaks.bed"
-tr_file <- "path/to/your/tr_table.csv"
-
-# Create dummy files for demonstration if needed
-# writeLines(c("chr1\t1000\t1500", "chr1\t2000\t2500"), peak_file)
-# write.csv(data.frame(TR = c("TF1", "TF2", "TF3")), tr_file, row.names = FALSE)
-
-grn_plot <- plot_GRN(
+peak_file <- "peaks.bed"
+tr_file   <- "trs.csv"
+# readr::write_csv(data.frame(TR = c("TF1","TF2","TF3")), tr_file)
+p <- plot_GRN(
   input_file_path = peak_file,
   input_table_path = tr_file,
   thres_TRs = 3,
-  genome = "hg38", # or "mm10"
+  genome = "hg38",
   link = "number"
 )
-
-print(grn_plot)
+print(p)
 }
 }

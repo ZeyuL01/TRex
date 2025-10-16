@@ -2,22 +2,21 @@
 % Please edit documentation in R/Function.R
 \name{alignment_wrapper}
 \alias{alignment_wrapper}
-\title{Count the 'good' and 'informative' cases by comparing input with the reference database.}
+\title{alignment_wrapper: count 'good' and 'total' cases per TR}
 \usage{
 alignment_wrapper(input_vec, bin_width, genome = c("hg38", "mm10"))
 }
 \arguments{
-\item{input_vec}{A numeric vector containing indices of transformed regions
-obtained by applying \code{import_input_regions}.}
+\item{input_vec}{A numeric vector of indices from \code{import_input_regions()}.}
 
 \item{bin_width}{Width of bin in base pairs.}
 
-\item{genome}{The genome of TR ChIP-seq data, either "hg38" or "mm10".}
+\item{genome}{The genome of TR ChIP-seq data, either \code{"hg38"} or \code{"mm10"}.}
 }
 \value{
-A data frame with three columns: TR labels, number of 'good' cases,
-  and number of 'total' informative cases.
+A data frame with columns \code{TR}, \code{GOOD}, and \code{TOTAL}.
 }
 \description{
-Count the 'good' and 'informative' cases by comparing input with the reference database.
+Compare input region indices against the reference TR database to count
+the number of 'good' and total informative cases for each TR.
 }
