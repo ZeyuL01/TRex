@@ -11,7 +11,7 @@
 </p>
 
 ## variational Bayesian Transcriptional Regulators explorer
-This package is part of the manuscript: "TRex: A High-Resolution Pan-Cancer Atlas of Transcriptional Regulators Reveals Oncogenic Regulatory Programs"
+This package is part of the manuscript: "TRex Defines High-Resolution Pan-Cancer Atlas of Transcriptional Regulators to Reveal Oncogenic Regulatory Programs"
 
 ![Open Source](https://img.shields.io/badge/Open%20Source-Yes-brightgreen.svg)
 ![Made with R](https://img.shields.io/badge/Made%20with-R-276DC3.svg)
