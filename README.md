@@ -6,7 +6,7 @@
 
 <p align="center" width="100%">
 
-<img src="docs/images/Head.png" alt="TRex Overview" width="400"/>
+<img src="docs/images/Head.png" alt="TRex Overview" width="200"/>
 
 </p>
 
