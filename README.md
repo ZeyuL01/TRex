@@ -6,7 +6,7 @@
 
 <p align="center" width="100%">
 
-<img src="docs/images/Head.png" alt="TRex Overview" width="400"/>
+<img src="docs/images/Head.png" alt="TRex Overview" width="200"/>
 
 </p>
 
@@ -52,7 +52,7 @@ For Windows users, please refer to: [R Development on Windows](https://cran.r-pr
 
 **No installation required!** We offer a convenient online web portal that implements TRex:
 
-**[www.TRex.online](http://www.TRex.online)**
+**[www.vb-TRex.online](http://www.vb-TRex.online)**
 
 The web portal provides the same functionality as the R package without requiring any local installation or setup. Simply upload your data and get results instantly.
 
