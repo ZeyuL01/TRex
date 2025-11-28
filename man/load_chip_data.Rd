@@ -30,5 +30,5 @@ Invisibly returns the created meta table data frame.
 Load and organize pre-compiled ChIP-seq data for TRex analysis. This function
 scans the specified directory for ChIP-seq files, extracts transcription regulator
 (TR) labels, and creates a meta table for efficient data access. Please follow
-the tutorial on: https://github.com/ZeyuL01/BIT.
+the tutorial on: https://github.com/ZeyuL01/TRex.
 }

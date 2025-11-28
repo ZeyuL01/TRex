@@ -6,6 +6,7 @@
 #include <RcppArmadillo.h>
 #include "RcppArmadillo.h"
 #include <Rcpp.h>
+#include <chrono>
 #include <RcppArmadilloExtensions/sample.h>
 #include <progress.hpp>
 #include <progress_bar.hpp>
@@ -27,7 +28,7 @@ arma::vec Update_S_ij(arma::vec a_i, arma::vec b_i, arma::vec nct);
 arma::vec Update_T_i(arma::vec Ji, arma::vec group_indicator, arma::vec a_i, arma::vec b_i, arma::vec m_ij,
                      double a_star, double b_star, double mu_star);
 arma::vec Update_V_i(arma::vec Ji, arma::vec a_i, arma::vec b_i, double a_star, double b_star);
-double Update_mu_star(double I, arma::vec T_i, arma::vec Ji);
+double Update_mu_star(double I, arma::vec T_i, arma::vec Ji, double a_star, double b_star);
 double Update_D(double I, double a_star, double b_star);
 double Update_a_star(double a_star_0, double I);
 double Update_b_star(double I, arma::vec Ji, double b_star_0, double mu_star, double D,
@@ -53,8 +54,6 @@ arma::vec Initialize_a_i(arma::vec xct, arma::vec nct);
 arma::vec Initialize_b_i(arma::vec xct, arma::vec nct);
 
 
-
-
 // [[Rcpp::export]]
 List Main_Function(int MaxIter, arma::vec xct,arma::vec nct,arma::vec tr_labels, bool display_progress=true) {
   int i;
@@ -73,6 +72,13 @@ List Main_Function(int MaxIter, arma::vec xct,arma::vec nct,arma::vec tr_labels,
       unique_indicator(i) = 0;  // Set to 0 if it appears for the second time
     }
     occurrences[tr_labels(i)]++;
+  }
+
+  arma::vec b_i_indicator = tr_labels;
+  for (std::size_t i = 0; i < unique_indicator.n_elem; ++i) {
+    if (occurrences[tr_labels(i)] == 1){
+      b_i_indicator(i) = 1;
+    }
   }
 
   //Ji, Mc, and Ji_Mc
@@ -105,10 +111,21 @@ List Main_Function(int MaxIter, arma::vec xct,arma::vec nct,arma::vec tr_labels,
   arma::vec a_i_0 = Initialize_a_i(xct, nct);
   arma::vec b_i_0 = Initialize_b_i(xct, nct);
 
+  arma::vec mu_star_vec(MaxIter);
+  arma::vec tau2_vec(MaxIter);
+  arma::mat theta_i_mat(T_i.size(),MaxIter);
+
+
   double a_star = a_star_0;
   double b_star = b_star_0;
   arma::vec a_i = a_i_0;
   arma::vec b_i = b_i_0;
+
+  // record start time
+  auto start_time = std::chrono::high_resolution_clock::now();
+
+  // allocate vector to store timing info
+  arma::vec time_vec(MaxIter);
 
   for(i=0;i<MaxIter;i++){
     p.increment();
@@ -120,13 +137,20 @@ List Main_Function(int MaxIter, arma::vec xct,arma::vec nct,arma::vec tr_labels,
     S_ij = Update_S_ij(a_i, b_i, nct);
     T_i = Update_T_i(Ji, tr_labels, a_i, b_i, m_ij, a_star, b_star, mu_star);
     V_i = Update_V_i(Ji, a_i, b_i, a_star, b_star);
-    mu_star = Update_mu_star(I, T_i, Ji);
+    mu_star = Update_mu_star(I, T_i, Ji, a_star, b_star);
     D = Update_D(I, a_star, b_star);
     a_star = Update_a_star(a_star_0, I);
     b_star = Update_b_star(I, Ji, b_star_0, mu_star, D, T_i, V_i, unique_indicator);
     a_i = Update_a_i(Ji_Mc, a_i_0);
-    b_i = Update_b_i(b_i_0, T_i, V_i, m_ij, S_ij, tr_labels);
+    b_i = Update_b_i(b_i_0, T_i, V_i, m_ij, S_ij, b_i_indicator);
 
+    mu_star_vec(i) = mu_star;
+    tau2_vec(i) = a_star / b_star;
+    theta_i_mat.col(i) = T_i;
+
+    auto current_time = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = current_time - start_time;
+    time_vec(i) = elapsed.count();
   }
 
   arma::vec theta_ij = m_ij;
@@ -140,7 +164,11 @@ List Main_Function(int MaxIter, arma::vec xct,arma::vec nct,arma::vec tr_labels,
                       Rcpp::Named("theta_i")=theta_i,
                       Rcpp::Named("sigma_i")=sigma_i,
                       Rcpp::Named("mu_star")=mu_star,
-                      Rcpp::Named("tau2")=tau2
+                      Rcpp::Named("tau2")=tau2,
+                      Rcpp::Named("mu_star_vec")=mu_star_vec,
+                      Rcpp::Named("tau2_vec")=tau2_vec,
+                      Rcpp::Named("theta_i_mat")=theta_i_mat,
+                      Rcpp::Named("time_vec") = time_vec
                       ));
 }
 
@@ -168,8 +196,8 @@ arma::vec Update_S_ij(arma::vec a_i, arma::vec b_i, arma::vec nct){
 
 arma::vec Update_T_i(arma::vec Ji, arma::vec group_indicator, arma::vec a_i, arma::vec b_i, arma::vec m_ij,
                      double a_star, double b_star, double mu_star){
-  std::map<int, double> groupSums;
 
+  std::map<int, double> groupSums;
   for (size_t i = 0; i < m_ij.size(); ++i) {
     groupSums[group_indicator[i]] += m_ij[i];
   }
@@ -179,20 +207,20 @@ arma::vec Update_T_i(arma::vec Ji, arma::vec group_indicator, arma::vec a_i, arm
     result[i] = groupSums[group_indicator[i]];
   }
 
-  return((1 / (a_star / b_star + Ji % a_i / b_i)) % (a_star / b_star * mu_star + result % a_i / b_i));
+  return(( 1 / (a_star / b_star + Ji % a_i / b_i)) % (a_star / b_star * mu_star + result % a_i / b_i));
 };
 
 arma::vec Update_V_i(arma::vec Ji, arma::vec a_i, arma::vec b_i, double a_star, double b_star){
   return(1 / (a_star / b_star + Ji % a_i / b_i));
 };
 
-double Update_mu_star(double I, arma::vec T_i, arma::vec Ji){
+double Update_mu_star(double I, arma::vec T_i, arma::vec Ji, double a_star, double b_star){
   arma::vec temp1 = T_i / Ji;
-  return(arma::sum(temp1) / (I));
+  return(arma::sum(temp1) / (I + 1/(100 * a_star / b_star)));
 };
 
 double Update_D(double I, double a_star, double b_star){
-  return(1 / (I * a_star / b_star));
+  return(1 / (0.01 + I * a_star / b_star));
 };
 
 double Update_a_star(double a_star_0, double I){
@@ -282,21 +310,25 @@ double Initialize_D(double I){
 }
 
 double Initialize_a_star(arma::vec xct, arma::vec nct){
-  return(100);
+  return(0.01);
 }
 
 double Initialize_b_star(arma::vec xct, arma::vec nct){
-  return(100);
+  return(0.01);
 }
 
 arma::vec Initialize_a_i(arma::vec xct, arma::vec nct){
   arma::vec a_i_0(xct.size());
-  a_i_0.fill(100);
+  a_i_0.fill(0.01);
   return(a_i_0);
 }
 
 arma::vec Initialize_b_i(arma::vec xct, arma::vec nct){
   arma::vec b_i_0(xct.size());
-  b_i_0.fill(100);
+  b_i_0.fill(0.01);
   return(b_i_0);
 }
+
+
+
+

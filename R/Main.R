@@ -8,7 +8,6 @@
 #' @param output_path Character. Directory path where results will be saved.
 #' @param filter_path Character, optional. Path to filter regions file. Default: NULL.
 #' @param show Logical. Whether to display results tables. Default: TRUE.
-#' @param plot.bar Logical. Whether to generate bar plots (currently disabled). Default: TRUE.
 #' @param format Character, optional. Input file format. Default: NULL.
 #' @param N Integer. Number of iterations for variational inference. Default: 5000.
 #' @param bin_width Integer. Width of genomic bins in base pairs. Default: 1000.
@@ -19,7 +18,7 @@
 #' @examples
 #' \dontrun{
 #' TRex(
-#'   file = "peaks.bed",
+#'   file = "hg38_CTCF.bed",
 #'   output_path = "./results",
 #'   N = 3000,
 #'   bin_width = 500
@@ -32,7 +31,6 @@ TRex <- function(
   output_path,
   filter_path = NULL,
   show = TRUE,
-  plot.bar = TRUE,
   format = NULL,
   N = 5000,
   bin_width = 1000,
@@ -98,17 +96,17 @@ TRex <- function(
     cat("Applying region filtering...\n")
     filter_inds <- import_input_regions(
       filter_path,
-      format = format,
       bin_width = bin_width,
       genome = genome
     )
     cat("  - Original peaks: ", length(peak_inds), " regions\n")
     cat("  - Filter regions: ", length(filter_inds), " regions\n")
-    filtered_peak_inds <- filter_peaks(peak_inds, filter_inds)
+    filtered_peak_inds <- intersect(peak_inds, filter_inds)
     cat("  - Filtered peaks: ", length(filtered_peak_inds), " regions\n")
     cat("  - Regions removed: ", length(peak_inds) - length(filtered_peak_inds), " regions\n")
     cat("Filtering completed\n")
   } else {
+    filter_inds = NULL
     filtered_peak_inds <- peak_inds
     cat("No filtering applied - using all ", length(peak_inds), " regions\n")
   }
@@ -124,6 +122,7 @@ TRex <- function(
 
   alignment_results <- alignment_wrapper(
     filtered_peak_inds,
+    filter_inds,
     bin_width = bin_width,
     genome = genome
   )
@@ -180,17 +179,6 @@ TRex <- function(
     cat("\n Step 6: Displaying results tables...\n")
     display_tables(file_path = file_name, output_path = output_path)
     cat("Tables displayed\n")
-  }
-
-  # ============================================================================
-  # STEP 7: GENERATE PLOTS (OPTIONAL - CURRENTLY DISABLED)
-  # ============================================================================
-
-  if (plot.bar) {
-    cat("\n Step 7: Plot generation (currently disabled)...\n")
-    # TODO: Implement plot generation when burnin parameter is available
-    # rank_plot(file_path = file_name, output_path = output_path, burnin = burnin)
-    cat("Plot generation is currently disabled\n")
   }
 
   # ============================================================================
