@@ -2,6 +2,7 @@
 
 export(TRex)
 export(alignment_wrapper)
+export(Alignment)
 export(check_loaded_chip_data)
 export(display_tables)
 export(import_input_regions)
