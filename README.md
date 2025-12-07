@@ -52,7 +52,7 @@ For Windows users, please refer to: [R Development on Windows](https://cran.r-pr
 
 **No installation required!** We offer a convenient online web portal that implements TRex:
 
-**[www.vb-TRex.online](http://www.vb-TRex.online)**
+**[www.vb-TRex.com](http://www.vb-TRex.com)**
 
 The web portal provides the same functionality as the R package without requiring any local installation or setup. Simply upload your data and get results instantly.
 
