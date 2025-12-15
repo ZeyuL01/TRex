@@ -10,15 +10,15 @@
 
 </p>
 
-## variational Bayesian Transcriptional Regulators explorer
-This package is part of the manuscript: "TRex Defines High-Resolution Pan-Cancer Atlas of Transcriptional Regulators to Reveal Oncogenic Regulatory Programs"
+## epigenomics-based Transcriptional Regulators explorer
+This package is part of the manuscript: "eTRex Defines High-Resolution Pan-Cancer Atlas of Transcriptional Regulators to Reveal Oncogenic Regulatory Programs"
 
 ![Open Source](https://img.shields.io/badge/Open%20Source-Yes-brightgreen.svg)
 ![Made with R](https://img.shields.io/badge/Made%20with-R-276DC3.svg)
 ![Made with Rcpp](https://img.shields.io/badge/Made%20with-Rcpp-1f425f.svg)
 ![Version](https://img.shields.io/badge/Version-1.0.0-blue.svg)
 
-**TRex** is an enhanced version of the Bayesian Identification of Transcriptional Regulators (BIT) tool, designed to identify transcriptional regulators from user-provided epigenomic region sets with improved computational efficiency, better user experience, and enhanced error handling. This package leverages a pre-processed reference library containing over 10,000 human TR ChIP-seq datasets and over 5,000 mouse TR ChIP-seq datasets.
+**eTRex** is an enhanced version of the BIT model, designed to identify transcriptional regulators from user-provided epigenomic region sets with improved computational efficiency, better user experience, and enhanced error handling. This package leverages a pre-processed reference library containing over 10,000 human TR ChIP-seq datasets and over 5,000 mouse TR ChIP-seq datasets.
 
 <p align="center">
 <img src="docs/images/Figure1.png" alt="vBIT Overview" width="800"/>
@@ -34,12 +34,12 @@ This package is part of the manuscript: "TRex Defines High-Resolution Pan-Cancer
 
 ## Installation
 
-You can install the development version of TRex from [GitHub](https://github.com/ZeyuL01/TRex) with:
+You can install the development version of eTRex from [GitHub](https://github.com/ZeyuL01/eTRex) with:
 
 ```r
 # install.packages("devtools")
-# devtools::install_github("ZeyuL01/TRex")
-# library(TRex)
+# devtools::install_github("ZeyuL01/eTRex")
+# library(eTRex)
 ```
 
 ### System Requirements
@@ -93,7 +93,7 @@ input_path <- "path/to/your/peaks.bed"
 output_path <- "path/to/output/"
 
 # Run TRex analysis
-TRex(input_path, output_path, N = 5000, genome = "hg38")
+eTRex(input_path, output_path, N = 5000, genome = "hg38")
 ```
 
 ### 3. View Results
@@ -109,7 +109,7 @@ head(results)
 
 ### Core Functions
 
-- `TRex()`: Main analysis function
+- `eTRex()`: Main analysis function
 - `load_chip_data()`: Load and organize ChIP-seq reference data
 - `check_loaded_chip_data()`: View loaded ChIP-seq data information
 - `import_input_regions()`: Import and process genomic regions
@@ -123,7 +123,7 @@ head(results)
 
 ## Supported File Formats
 
-TRex supports multiple input file formats:
+eTRex supports multiple input file formats:
 
 - **BED**: Standard BED format
 - **narrowPeak**: ENCODE narrowPeak format
@@ -145,7 +145,7 @@ TRex supports multiple input file formats:
 
 ## Citation
 
-If you use TRex in your work, please cite:
+If you use eTRex in your work, please cite:
 
 Temporary link to BIT (waiting for update): **Lu, Z., Xu, L. & Wang, X. BIT: Bayesian Identification of Transcriptional regulators from epigenomics-based query region sets. Nat Commun 16, 4966 (2025). https://doi.org/10.1038/s41467-025-60269-4**
 
@@ -160,4 +160,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Acknowledgments
 
-TRex builds upon the original BIT tool and includes contributions from the bioinformatics community. Special thanks to all contributors and users who provided feedback and suggestions for improvements.
+eTRex builds upon the original BIT tool and includes contributions from the bioinformatics community. Special thanks to all contributors and users who provided feedback and suggestions for improvements.
