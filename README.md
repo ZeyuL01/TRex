@@ -93,7 +93,7 @@ input_path <- "path/to/your/peaks.bed"
 output_path <- "path/to/output/"
 
 # Run TRex analysis
-TRex(input_path, output_path, N = 5000, burnin = 2500, genome = "hg38")
+TRex(input_path, output_path, N = 5000, genome = "hg38")
 ```
 
 ### 3. View Results
@@ -102,11 +102,6 @@ TRex(input_path, output_path, N = 5000, burnin = 2500, genome = "hg38")
 # Load and view results
 results <- read.csv(paste0(output_path, "peaks_rank_table.csv"))
 head(results)
-
-# Create visualization
-rank_plot(file_path = paste0(output_path, "peaks.rds"), 
-          output_path = output_path, 
-          n = 10)
 ```
 
 
@@ -120,11 +115,6 @@ rank_plot(file_path = paste0(output_path, "peaks.rds"),
 - `import_input_regions()`: Import and process genomic regions
 - `alignment_wrapper()`: Compare input regions with reference data
 
-### Analysis Functions
-
-- `display_tables()`: Generate ranking tables from results
-- `rank_plot()`: Create bar plots of top TRs
-- `compare_scatter_plot()`: Compare results between two analyses
 
 ### Utility Functions
 
