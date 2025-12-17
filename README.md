@@ -11,14 +11,14 @@
 </p>
 
 ## epigenomics-based Transcriptional Regulators explorer
-This package is part of the manuscript: "eTRex Defines High-Resolution Pan-Cancer Atlas of Transcriptional Regulators to Reveal Oncogenic Regulatory Programs"
+This package is part of the manuscript: "eTRex Reveals Oncogenic Transcriptional Regulatory Programs Across Human Cancers"
 
 ![Open Source](https://img.shields.io/badge/Open%20Source-Yes-brightgreen.svg)
 ![Made with R](https://img.shields.io/badge/Made%20with-R-276DC3.svg)
 ![Made with Rcpp](https://img.shields.io/badge/Made%20with-Rcpp-1f425f.svg)
 ![Version](https://img.shields.io/badge/Version-1.0.0-blue.svg)
 
-**eTRex** is an enhanced version of the BIT model, designed to identify transcriptional regulators from user-provided epigenomic region sets with improved computational efficiency, better user experience, and enhanced error handling. This package leverages a pre-processed reference library containing over 10,000 human TR ChIP-seq datasets and over 5,000 mouse TR ChIP-seq datasets.
+**eTRex** is designed to identify transcriptional regulators from user-provided epigenomic region sets with improved computational efficiency, better user experience, and enhanced error handling. This package leverages a pre-processed reference library containing over 10,000 human TR ChIP-seq datasets and over 5,000 mouse TR ChIP-seq datasets.
 
 <p align="center">
 <img src="docs/images/Figure1.png" alt="vBIT Overview" width="800"/>
@@ -93,7 +93,7 @@ input_path <- "path/to/your/peaks.bed"
 output_path <- "path/to/output/"
 
 # Run TRex analysis
-eTRex(input_path, output_path, N = 5000, genome = "hg38")
+eTRex(input_path, output_path, N = 5000, bin_width=1000, genome = "hg38")
 ```
 
 ### 3. View Results
@@ -114,12 +114,6 @@ head(results)
 - `check_loaded_chip_data()`: View loaded ChIP-seq data information
 - `import_input_regions()`: Import and process genomic regions
 - `alignment_wrapper()`: Compare input regions with reference data
-
-
-### Utility Functions
-
-- `logistic()`: Logistic transformation
-- `filter_peaks()`: Filter regions based on criteria
 
 ## Supported File Formats
 
