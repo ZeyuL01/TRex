@@ -13,7 +13,7 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 
 // Alignment
 List Alignment(NumericVector input_vec, NumericVector ref_vec);
-RcppExport SEXP _TRex_Alignment(SEXP input_vecSEXP, SEXP ref_vecSEXP) {
+RcppExport SEXP _eTRex_Alignment(SEXP input_vecSEXP, SEXP ref_vecSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -25,7 +25,7 @@ END_RCPP
 }
 // Main_Function
 List Main_Function(int MaxIter, arma::vec xct, arma::vec nct, arma::vec tr_labels, bool display_progress);
-RcppExport SEXP _TRex_Main_Function(SEXP MaxIterSEXP, SEXP xctSEXP, SEXP nctSEXP, SEXP tr_labelsSEXP, SEXP display_progressSEXP) {
+RcppExport SEXP _eTRex_Main_Function(SEXP MaxIterSEXP, SEXP xctSEXP, SEXP nctSEXP, SEXP tr_labelsSEXP, SEXP display_progressSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -40,12 +40,12 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_TRex_Alignment", (DL_FUNC) &_TRex_Alignment, 2},
-    {"_TRex_Main_Function", (DL_FUNC) &_TRex_Main_Function, 5},
+    {"_eTRex_Alignment", (DL_FUNC) &_eTRex_Alignment, 2},
+    {"_eTRex_Main_Function", (DL_FUNC) &_eTRex_Main_Function, 5},
     {NULL, NULL, 0}
 };
 
-RcppExport void R_init_TRex(DllInfo *dll) {
+RcppExport void R_init_eTRex(DllInfo *dll) {
     R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
     R_useDynamicSymbols(dll, FALSE);
 }

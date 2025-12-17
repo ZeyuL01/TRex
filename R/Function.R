@@ -1,4 +1,4 @@
-#' alignment_wrapper: count 'good' and 'total' cases per TR
+#'#' alignment_#' alignment_#' alignment_otal' cases perapper: count 'good' and 'total' cases per TR
 #'
 #' @description
 #' Compare input region indices against the reference TR database to count
@@ -22,7 +22,7 @@ alignment_wrapper <- function(input_vec, filter_vec=NULL, bin_width, genome = c(
 
   # Load the meta table
   message("Loading meta table...")
-  meta_table_path <- system.file("meta_table.rds", package = "TRex")
+  meta_table_path <- system.file("meta_table.rds", package = "eTRex")
 
   if (!file.exists(meta_table_path)) {
     stop("Meta table not found in package directory. Please ensure the package is installed correctly.")
@@ -37,7 +37,7 @@ alignment_wrapper <- function(input_vec, filter_vec=NULL, bin_width, genome = c(
   if (is.null(file_table)) {
     stop("ChIP-seq files not found for genome '", genome, "' and bin width '", bin_width, "'. ",
          "Please download and load the ChIP-seq data first using load_chip_data().\n",
-         "You may follow the tutorial on: https://github.com/ZeyuL01/TRex")
+         "You may follow the tutorial on: https://github.com/ZeyuL01/eTRex")
   }
 
   # Validate file table structure
@@ -191,10 +191,10 @@ import_input_regions <- function(file, format = NULL, bin_width = 1000, genome=c
 #' Load pre-compiled ChIP-seq data
 #'
 #' @description
-#' Load and organize pre-compiled ChIP-seq data for TRex analysis. This function
+#' Load and organize pre-compiled ChIP-seq data for eTRex analysis. This function
 #' scans the specified directory for ChIP-seq files, extracts transcription regulator
 #' (TR) labels, and creates a meta table for efficient data access. Please follow
-#' the tutorial on: https://github.com/ZeyuL01/TRex.
+#' the tutorial on: https://github.com/ZeyuL01/eTRex.
 #'
 #' @param data_path Character string. Path to the ChIP-seq data folder, can be
 #'   absolute or relative path.
@@ -224,7 +224,7 @@ load_chip_data <- function(data_path, bin_width, genome = c("hg38", "mm10"), ove
   }
 
   # Get meta table file path
-  meta_table_path <- file.path(system.file(package = "TRex"), "meta_table.rds")
+  meta_table_path <- file.path(system.file(package = "eTRex"), "meta_table.rds")
 
   # Check if meta table exists
   meta_table_exists <- file.exists(meta_table_path)
@@ -332,7 +332,7 @@ check_loaded_chip_data <- function(genome = NULL, bin_width = NULL) {
   }
 
   # Get meta table file path
-  meta_table_path <- file.path(system.file(package = "TRex"), "meta_table.rds")
+  meta_table_path <- file.path(system.file(package = "eTRex"), "meta_table.rds")
 
   if (!file.exists(meta_table_path)) {
     message("No ChIP-seq data has been loaded yet.")
@@ -410,10 +410,10 @@ check_loaded_chip_data <- function(genome = NULL, bin_width = NULL) {
 
 #' display_tables
 #' @description To show the ranking table by inspecting the results of variational inference.
-#' @param file_path path to the saved TRex variational inference results.
+#' @param file_path path to the saved eTRex variational inference results.
 #' @param output_path path to save the rank table.
-#' @param burnin number of samples used for burn-in. If not specify, TRex will use the half of the iterations as burn in.
-#' @return a data.frame object contains TR names, theta_i, TRex scores for each TR.
+#' @param burnin number of samples used for burn-in. If not specify, eTRex will use the half of the iterations as burn in.
+#' @return a data.frame object contains TR names, theta_i, eTRex scores for each TR.
 #' @export
 display_tables<-function(file_path, output_path){
   dat<-readRDS(file_path)
@@ -424,13 +424,13 @@ display_tables<-function(file_path, output_path){
   theta_i <- dat$theta_i[TR_index]
   TR_names <- TR_names[TR_index]
 
-  TRex_score<-pnorm(theta_i)
+  eTRex_score<-pnorm(theta_i)
 
   data("TR_meta_table")
 
   results_theta_i=data.frame(TR=TR_names,
                              Theta_i=theta_i,
-                             TRex_score=TRex_score,
+                             eTRex_score=eTRex_score,
                              Is.TF = TR_meta_table$is.TF[match(TR_names,TR_meta_table$TR)],
                              Type = TR_meta_table$Type[match(TR_names,TR_meta_table$TR)]
                              )

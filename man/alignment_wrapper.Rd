@@ -4,7 +4,12 @@
 \alias{alignment_wrapper}
 \title{alignment_wrapper: count 'good' and 'total' cases per TR}
 \usage{
-alignment_wrapper(input_vec, bin_width, genome = c("hg38", "mm10"))
+alignment_wrapper(
+  input_vec,
+  filter_vec = NULL,
+  bin_width,
+  genome = c("hg38", "mm10")
+)
 }
 \arguments{
 \item{input_vec}{A numeric vector of indices from \code{import_input_regions()}.}

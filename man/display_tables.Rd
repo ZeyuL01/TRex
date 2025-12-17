@@ -7,14 +7,14 @@
 display_tables(file_path, output_path)
 }
 \arguments{
-\item{file_path}{path to the saved TRex variational inference results.}
+\item{file_path}{path to the saved eTRex variational inference results.}
 
 \item{output_path}{path to save the rank table.}
 
-\item{burnin}{number of samples used for burn-in. If not specify, TRex will use the half of the iterations as burn in.}
+\item{burnin}{number of samples used for burn-in. If not specify, eTRex will use the half of the iterations as burn in.}
 }
 \value{
-a data.frame object contains TR names, theta_i, TRex scores for each TR.
+a data.frame object contains TR names, theta_i, eTRex scores for each TR.
 }
 \description{
 To show the ranking table by inspecting the results of variational inference.

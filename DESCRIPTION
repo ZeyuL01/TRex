@@ -1,6 +1,6 @@
-Package: TRex
+Package: eTRex
 Type: Package
-Title: variational Bayesian Transcriptional Regulator explorer
+Title: epigenomics-based Transcriptional Regulator explorer
 Version: 1.0
 Date: 2024-06-16
 Author: Zeyu Lu
@@ -12,6 +12,7 @@ Description: Implements a variational Bayesian framework to infer transcriptiona
 License: GPL (>= 3)
 Imports:
     Rcpp,
+    RcppParallel,
     data.table,
     rtracklayer,
     GenomicRanges,
@@ -21,7 +22,9 @@ Imports:
     ggplot2,
     ggraph,
     igraph,
-    readr
+    readr,
+    future,
+    future.apply
 Suggests:
     ChIPseeker,
     clusterProfiler,
@@ -33,7 +36,7 @@ Suggests:
     TxDb.Mmusculus.UCSC.mm10.knownGene,
     org.Mm.eg.db,
     basicPlotteR
-LinkingTo: Rcpp, RcppArmadillo, RcppDist, RcppProgress
+LinkingTo: Rcpp, RcppArmadillo, RcppDist, RcppProgress, RcppParallel
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3

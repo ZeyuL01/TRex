@@ -2,10 +2,10 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 Alignment <- function(input_vec, ref_vec) {
-    .Call(`_TRex_Alignment`, input_vec, ref_vec)
+    .Call(`_eTRex_Alignment`, input_vec, ref_vec)
 }
 
 Main_Function <- function(MaxIter, xct, nct, tr_labels, display_progress = TRUE) {
-    .Call(`_TRex_Main_Function`, MaxIter, xct, nct, tr_labels, display_progress)
+    .Call(`_eTRex_Main_Function`, MaxIter, xct, nct, tr_labels, display_progress)
 }
 

@@ -1,4 +1,4 @@
-#' TRex: variational Bayesian Transcriptional Regulators explorer
+#' eTRex: variational Bayesian Transcriptional Regulators explorer
 #'
 #' @description
 #' Performs variational Bayesian inference on ChIP-seq data by comparing input regions
@@ -17,7 +17,7 @@
 #'
 #' @examples
 #' \dontrun{
-#' TRex(
+#' eTRex(
 #'   file = "hg38_CTCF.bed",
 #'   output_path = "./results",
 #'   N = 3000,
@@ -26,7 +26,7 @@
 #' }
 #'
 #' @export
-TRex <- function(
+eTRex <- function(
   file,
   output_path,
   filter_path = NULL,
@@ -66,7 +66,7 @@ TRex <- function(
   # INITIALIZATION
   # ============================================================================
 
-  cat("Starting TRex Analysis\n")
+  cat("Starting eTRex Analysis\n")
   cat("=", rep("=", 50), "\n", sep = "")
 
   # Convert to absolute path
@@ -186,7 +186,7 @@ TRex <- function(
   # ============================================================================
 
   cat("\n", "=", rep("=", 50), "\n", sep = "")
-  cat("TRex Analysis Completed Successfully!\n")
+  cat("eTRex Analysis Completed Successfully!\n")
   cat("Results location:", output_path, "\n")
   cat("Main TR profile:", paste0(output_path, "/", base_name, "_rank_table.csv"),"\n")
   cat("VI file:", file_name, "\n")
