@@ -9,7 +9,7 @@ Description: Implements a variational Bayesian framework to infer transcriptiona
     regulator activity from ChIP-seq–derived summaries. The package maps input 
     regions to genomic bins, aligns them to reference TR profiles, and produces 
     ranked regulators with uncertainty summaries and optional visualizations.
-License: GPL (>= 3)
+License: MIT + file LICENSE
 Imports:
     Rcpp,
     RcppParallel,
