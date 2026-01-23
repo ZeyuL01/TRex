@@ -141,7 +141,9 @@ eTRex supports multiple input file formats:
 
 If you use eTRex in your work, please cite:
 
-Temporary link to BIT (waiting for update): **Lu, Z., Xu, L. & Wang, X. BIT: Bayesian Identification of Transcriptional regulators from epigenomics-based query region sets. Nat Commun 16, 4966 (2025). https://doi.org/10.1038/s41467-025-60269-4**
+**eTRex Reveals Oncogenic Transcriptional Regulatory Programs Across Human Cancers
+Zeyu Lu, Yuqiu Yang, Qiang Zheng, Feng Gao, Lin Xu, Xinlei Wang
+bioRxiv 2026.01.16.699950; doi: https://doi.org/10.64898/2026.01.16.699950**
 
 ## Contact
 
